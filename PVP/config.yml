@@ -1,0 +1,104 @@
+MapName: PVP Default Config
+cubeMaxX: 183
+cubeMinX: 118
+cubeMaxZ: 355
+cubeMinZ: 290 
+GameMode: freeforall
+KillsToWinGame: 25
+SecondsToEndGame: 600
+EnlightenChance: 10
+LobbySawn:
+  X: 155
+  Y: 9
+  Z: 311
+Inventory:
+  Armor:
+    Helmet:
+      Name: LEATHER_HELMET
+      NumEnchants: 0
+      Enchant1:
+        ID: 1
+        Level: 4
+    ChestPlate:
+      Name: LEATHER_CHESTPLATE
+      NumEnchants: 0
+    Leggings:
+      Name: LEATHER_LEGGINGS
+      NumEnchants: 0
+    Boots:
+      Name: LEATHER_BOOTS
+      NumEnchants: 0
+  NumItems: 5
+  Item1:
+    Name: STONE_SWORD
+    Amount: 1
+    Damage: 0
+    NumEnchants: 0
+    Enchant1:
+      ID: 16
+      Level: 3
+  Item2:
+    Name: BOW
+    Amount: 1
+    Damage: 0
+    NumEnchants: 0
+  Item3:
+    Name: STONE_PICKAXE
+    Amount: 1
+    Damage: 0
+    NumEnchants: 0
+  Item4:
+    Name: COOKED_FISH
+    Amount: 16
+    Damage: 1
+    NumEnchants: 0
+  Item5:
+    Name: ARROW
+    Amount: 64
+    Damage: 0
+    NumEnchants: 0
+  NumPotions: 1
+  Potion1: 
+    Type: POISON
+    Amount: 1
+    Level: 1
+    Splash: Y
+  NumSpecials: 1
+  Special1: COMPASS
+  NumEffects: 0
+  Effect1:
+    Name: SPEED
+    Duration: 200000
+    Amplifier: 1
+NumTeams: 2
+Team1: 
+  Name: Red
+  Armor:
+    Color:
+      R: 255
+      G: 0
+      B: 0
+  ChatColor: RED
+Team2:
+  Name: Green
+  Armor:
+    Color:
+      R: 0
+      G: 255
+      B: 0
+  ChatColor: GREEN
+Team3:
+  Name: Blue
+  Armor:
+    Color:
+      R: 0
+      G: 0
+      B: 255
+  ChatColor: BLUE
+NumSpawnPoints: 1
+SpawnPoints:
+  Point1:
+    X: 150
+    Y: 70
+    Z: 291
+    Yaw: 1

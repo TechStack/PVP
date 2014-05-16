@@ -1,0 +1,13 @@
+name: DeathCube
+main: com.projectreddog.deathcube.DeathCube
+version: .02
+commands:
+   gamestats:
+      description: Shows some statistics about the current DeathCube game.
+      usage: /<command>
+   penalty:
+      description: Shows the current Death Penalty time amount in seconds.
+      usage: /<command>
+   startgame:
+      description: Starts the game immediately, regardless of the number of players online.
+      usage: /<command> 
