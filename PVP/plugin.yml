@@ -8,6 +8,15 @@ commands:
    penalty:
       description: Shows the current Death Penalty time amount in seconds.
       usage: /<command>
+   setgamemode:
+      description: Sets the Game Mode as Free-for-All or Teams.
+      usage: /<command> (freeforall, f, teams, t)
+   setkills:
+      description: Sets the number of kills needed to win the game.
+      usage: /<command> amount
+   settimelimit:
+      description: Sets the length of a game.
+      usage: /<command> (seconds or minutes) [m, for minutes]
    startgame:
       description: Starts the game immediately, regardless of the number of players online.
       usage: /<command> 
