@@ -96,7 +96,7 @@ Team3:
       G: 0
       B: 255
   ChatColor: BLUE
-Team3:
+Team4:
   Name: Yellow
   Armor:
     Color:
@@ -105,9 +105,20 @@ Team3:
       B: 0
   ChatColor: YELLOW
 NumSpawnPoints: 1
-SpawnPoints:
-  Point1:
-    X: 150
-    Y: 70
-    Z: 291
-    Yaw: 1
+RespawnPoint1:
+  X: 150
+  Y: 70
+  Z: 291
+  Yaw: 1
+NumWeapons: 1
+Weapon1:
+  X: 160
+  Y: 70
+  Z: 291
+  Name: IRON_SWORD
+  Amount: 1
+  Damage: 0
+  NumEnchants: 0
+  Enchant1:
+    ID: 16
+    Level: 3

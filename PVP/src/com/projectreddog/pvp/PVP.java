@@ -76,17 +76,23 @@ import org.bukkit.util.Vector;
  *       -- Running
  *       -- Game Over
  *    - Free-for-All PVP Combat
- *    - Team PVP Combat - TODO Need Score Tracking Setup
+ *    - Team PVP Combat - TODO Scoreboard tracks combined team players' kills?
  *    - Spawn Points
  *       -- Safe spawn points TODO
  *    - Power-ups  TODO
  *       -- Add Effects or Enchantments
  *       -- Visual Effect / Collectible
- *    - Weapons on Map  TODO
+ *    - Weapons on Map (includes Items)  TODO  In Progress...
  *       -- Customizable via Config
  *           --- Item Abilities
  *           --- Item Locations
  *           --- Item Respawn (and Duration?)
+ *    - Potions  TODO
+ *    - Special Points  TODO
+ *       -- Armor Upgrade
+ *       -- Effect
+ *       -- Enchanting
+ *    - Cooldown for all item and special points.  TODO 
  *    - Scoring
  *       -- Scoreboard
  *       -- Game Over Limits
@@ -114,6 +120,7 @@ public class PVP extends JavaPlugin implements Listener{
 	public float cubeMinZ;
 	private Location lobbySpawn;
 	private Location[] spawnPoints;
+	private Weapon[] weapons;
 	private String MapName;
 	private String gameMode;
 	
@@ -126,6 +133,7 @@ public class PVP extends JavaPlugin implements Listener{
 	private static int MAX_TEAMS = 3;
 	public int enlightenChance; 
 	private int numSpawnPoints;
+	private int numWeapons;
 	private int gameSecondsCount = 0;
 	private int timeTickedTimer = 1;
 	private int leadingKillsScore = 0;
@@ -218,12 +226,12 @@ public class PVP extends JavaPlugin implements Listener{
 		double pointX, pointY, pointZ, pointYaw;
 		
 		for( int i=1; i <= numSpawnPoints; i++ ) {
-			pointX = centerBlockValue(this.getConfig().getDouble("SpawnPoints.Point" + i + ".X"));
-			pointY = this.getConfig().getDouble("SpawnPoints.Point" + i + ".Y");
-			pointZ = centerBlockValue(this.getConfig().getDouble("SpawnPoints.Point" + i + ".Z"));
+			pointX = centerBlockValue(this.getConfig().getDouble("RespawnPoint" + i + ".X"));
+			pointY = this.getConfig().getDouble("RespawnPoint" + i + ".Y");
+			pointZ = centerBlockValue(this.getConfig().getDouble("RespawnPoint" + i + ".Z"));
 			spawnPoints[i-1] = new Location(Bukkit.getWorld("World"), pointX, pointY, pointZ);
 			
-			pointYaw = this.getConfig().getDouble("SpawnPoints.Point" + i + ".Yaw");
+			pointYaw = this.getConfig().getDouble("RespawnPoint" + i + ".Yaw");
 			if(Math.abs(pointYaw - 1.0) < 0.0000001)
 			{
 				/**
@@ -242,6 +250,66 @@ public class PVP extends JavaPlugin implements Listener{
 				pointYaw += 90f;
 			}
 			spawnPoints[i-1].setYaw((float) pointYaw);
+		}
+		
+		
+		/**
+		 * ======================================  On-Map Weapons Setup ======================================  TODO
+		 *  - Get number of on-map weapons
+		 *  - Create array of Weapon objects to be used to spawn and track the Weapon
+		 *  - From the config file, create weapon object and add to the array
+		 */
+		numWeapons = this.getConfig().getInt("NumWeapons");
+		weapons = new Weapon[numWeapons];
+		Location weaponLocation;
+		
+		for( int i=1; i <= numWeapons; i++ ) {
+			pointX = centerBlockValue(this.getConfig().getDouble("Weapon" + i + ".X"));
+			pointY = this.getConfig().getDouble("Weapon" + i + ".Y");
+			pointZ = centerBlockValue(this.getConfig().getDouble("Weapon" + i + ".Z"));
+			weaponLocation = new Location(Bukkit.getWorld("World"), pointX, pointY, pointZ);
+			
+			int amount = 1;
+			int damage = 0;
+			ItemStack itemStack;
+			
+			/**
+			 *  Get Material
+			 */
+			Material material = Material.getMaterial(this.getConfig().getString("Weapon" + i + ".Name"));
+			
+			/**
+			 *  Check for Amount
+			 */
+			if(this.getConfig().getInt("Weapon" + i + ".Amount") != 1)
+				amount = this.getConfig().getInt("Weapon" + i + ".Amount");
+			
+			/**
+			 *  Check for Damage Value
+			 */
+			if(this.getConfig().getInt("Weapon" + i + ".Damage") != 0)
+			{
+				damage = this.getConfig().getInt("Weapon" + i + ".Damage");
+				
+				itemStack = new ItemStack(material, amount, (short) damage);
+			}
+			else
+			{
+				itemStack = new ItemStack(material, amount);
+			}
+			
+			/**
+			 *  Enchant Item
+			 */
+			String configPrefix = "Weapon" + i;
+			enchantItem(configPrefix, itemStack);
+			
+			/**
+			 *  Do something with the ItemStack
+			 *   - hasGravity() ?
+			 *   - setGravity() ?
+			 */ 
+			Bukkit.getWorld("World").dropItem(weaponLocation, itemStack); //.setVelocity(new Vector());
 		}
 		
 		
@@ -267,27 +335,42 @@ public class PVP extends JavaPlugin implements Listener{
 	
 	@EventHandler
 	public void onDeath(PlayerDeathEvent e) {
+		
+		Player victim = e.getEntity();
+		
 		if (e.getEntity() instanceof Player){
 			
-			if (e.getEntity().getKiller() instanceof Player){
+			Player killer = e.getEntity().getKiller();
+			
+			if (killer instanceof Player){
 				/**
 				 *  A player killed another player.  Allow chance to enlighten the killer.
 				 *  
 				 *  Also, increment scoreboard (Kills).
 				 */
 				
-				enlighten(e.getEntity().getKiller());
+				enlighten(killer);
 				
 				/**
 				 *  Increment Winning Kills Tracking 
 				 *   - If new leading kills score
-				 *   - Note: Scoreboard increments itself
+				 *   - Note: Scoreboard increments itself -> True for Teams?
 				 */
-				score = kills.getScore(e.getEntity().getKiller());
+				if( gameMode.equals("teams"))
+				{
+					score = kills.getScore(Bukkit.getOfflinePlayer( getTeamByPlayer(killer).getChatColor() + getTeamByPlayer(killer).getName() + ": " ));
+				}
+				else
+					score = kills.getScore(killer);
+				
 				if(score.getScore() > leadingKillsScore)
 				{
 					leadingKillsScore = score.getScore();
-					leadingPlayer = e.getEntity().getKiller();
+					
+					if( gameMode.equals("teams"))
+						leadingTeam = getTeamByPlayer(killer);
+					else
+						leadingPlayer = killer;
 				}
 			}
 			else
@@ -296,8 +379,9 @@ public class PVP extends JavaPlugin implements Listener{
 				 *  Decrement Score for this Player
 				 *   - Death Reason: Suicide or non-Player Killer
 				 *   TODO Make Decrement for Suicide Only
+				 *   - Does this need special handling for teams?
 				 */
-				score = kills.getScore(e.getEntity());
+				score = kills.getScore(victim);
 				score.setScore((int) score.getScore() - 1);
 				
 				/**
@@ -306,24 +390,40 @@ public class PVP extends JavaPlugin implements Listener{
 				 */
 				if(leadingPlayer != null)
 				{
-					if(e.getEntity() == leadingPlayer)
+					if(victim == leadingPlayer)
 					{
 						leadingKillsScore = 0;
 						
-						for( Player p : Bukkit.getOnlinePlayers() )
+						if( gameMode.equals("teams"))
 						{
-							score = kills.getScore(p);
-							
-							if(score.getScore() > leadingKillsScore)
+							for( Team t : teamsArray)
 							{
-								leadingKillsScore = score.getScore();
-								leadingPlayer = e.getEntity().getKiller();
+								score = kills.getScore(Bukkit.getOfflinePlayer( t.getChatColor() + t.getName() + ": " ));
+								
+								if(score.getScore() > leadingKillsScore)
+								{
+									leadingKillsScore = score.getScore();
+									leadingTeam = t;
+								}
 							}
 						}
-					}
-				}
-			}
-		}
+						else
+						{
+							for( Player p : Bukkit.getOnlinePlayers() )
+							{
+								score = kills.getScore(p);
+								
+								if(score.getScore() > leadingKillsScore)
+								{
+									leadingKillsScore = score.getScore();
+									leadingPlayer = p;
+								}
+							}  //  for( Player p : Bukkit.getOnlinePlayers() )
+						}  //  if( gameMode.equals("teams"))
+					}  //  if(victim == leadingPlayer)
+				}  //  if(leadingPlayer != null)
+			}  //  if(killer instanceof Player)
+		}  //  if(e.getEntity() instanceof Player)
 		
 		ArrayList<ItemStack>is =new ArrayList<ItemStack>();
 
