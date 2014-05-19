@@ -3,6 +3,7 @@ cubeMaxX: 183
 cubeMinX: 118
 cubeMaxZ: 355
 cubeMinZ: 290 
+ActiveForceField: Y
 GameMode: freeforall
 KillsToWinGame: 25
 SecondsToEndGame: 600
@@ -95,6 +96,14 @@ Team3:
       G: 0
       B: 255
   ChatColor: BLUE
+Team3:
+  Name: Yellow
+  Armor:
+    Color:
+      R: 255
+      G: 255
+      B: 0
+  ChatColor: YELLOW
 NumSpawnPoints: 1
 SpawnPoints:
   Point1:

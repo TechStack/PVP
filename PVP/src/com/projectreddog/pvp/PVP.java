@@ -77,10 +77,12 @@ import org.bukkit.util.Vector;
  *       -- Game Over
  *    - Free-for-All PVP Combat
  *    - Team PVP Combat - TODO Need Score Tracking Setup
- *    - Power-ups
+ *    - Spawn Points
+ *       -- Safe spawn points TODO
+ *    - Power-ups  TODO
  *       -- Add Effects or Enchantments
  *       -- Visual Effect / Collectible
- *    - Weapons on Map
+ *    - Weapons on Map  TODO
  *       -- Customizable via Config
  *           --- Item Abilities
  *           --- Item Locations
@@ -91,7 +93,7 @@ import org.bukkit.util.Vector;
  *           --- Time
  *           --- Kills
  *           --- Default (and customizable in-game)
- *           --- Penalties (suicide)
+ *           --- Penalties (TODO Suicide Only)
  *
  */
 
@@ -114,18 +116,11 @@ public class PVP extends JavaPlugin implements Listener{
 	private Location[] spawnPoints;
 	private String MapName;
 	private String gameMode;
-
-	/**
-	 *  Capture Point Visualization Variables
-	 */
-	private static final int VISUAL_POINT_TICK_LIMIT = 1;
-	private static final int VISUAL_POINT_TICK_LIMIT2 = 3;
-	private int visualPointTick = VISUAL_POINT_TICK_LIMIT;
-	private int visualPointTick2 = VISUAL_POINT_TICK_LIMIT2;
 	
 	/**
 	 *  General Game Variables
 	 */
+	private static String ACTIVE_FORCE_FIELD; 
 	private static int SECONDS_TO_END_GAME;
 	private static int KILLS_TO_WIN_GAME;
 	private static int MAX_TEAMS = 3;
@@ -154,6 +149,14 @@ public class PVP extends JavaPlugin implements Listener{
 	private BukkitTask task ;
 
 	/**
+	 *  Visualization Variables
+	 */
+	private static final int VISUAL_POINT_TICK_LIMIT = 1;
+	private static final int VISUAL_POINT_TICK_LIMIT2 = 3;
+	private int visualPointTick = VISUAL_POINT_TICK_LIMIT;
+	private int visualPointTick2 = VISUAL_POINT_TICK_LIMIT2;
+	
+	/**
 	 *  Scoreboard Variables
 	 */
 	Objective kills;
@@ -167,11 +170,11 @@ public class PVP extends JavaPlugin implements Listener{
 		/**
 		 * ======================================  Main Game Setup ======================================
 		 */
-		GameState =GameStates.Lobby;
+		GameState = GameStates.Lobby;
 		playerTeam = new HashMap<String, String>();
 
 		getServer().getPluginManager().registerEvents(this, this);
-		logger= this.getLogger();
+		logger = this.getLogger();
 
 		this.saveDefaultConfig();
 
@@ -196,6 +199,7 @@ public class PVP extends JavaPlugin implements Listener{
 		/**
 		 *  Game Options Setup
 		 */
+		ACTIVE_FORCE_FIELD = this.getConfig().getString("ActiveForceField");
 		gameMode = this.getConfig().getString("GameMode");
 		KILLS_TO_WIN_GAME = this.getConfig().getInt("KillsToWinGame");
 		SECONDS_TO_END_GAME = this.getConfig().getInt("SecondsToEndGame");
@@ -205,6 +209,9 @@ public class PVP extends JavaPlugin implements Listener{
 		
 		/**
 		 * ======================================  Spawn Points Setup ======================================
+		 *  - Get number of points
+		 *  - Create array of Locations to be used to choose a spawn point on Player respawn
+		 *  - From the config file, create locations for each point and add to the array
 		 */
 		numSpawnPoints = this.getConfig().getInt("NumSpawnPoints");
 		spawnPoints = new Location[numSpawnPoints];
@@ -262,20 +269,19 @@ public class PVP extends JavaPlugin implements Listener{
 	public void onDeath(PlayerDeathEvent e) {
 		if (e.getEntity() instanceof Player){
 			
-			/**
-			 *  A player killed another player.  Allow chance to enlighten the killer.
-			 *  
-			 *  Also, increment scoreboard (Kills).
-			 */
 			if (e.getEntity().getKiller() instanceof Player){
 				/**
-				 *  Enlighten
+				 *  A player killed another player.  Allow chance to enlighten the killer.
+				 *  
+				 *  Also, increment scoreboard (Kills).
 				 */
+				
 				enlighten(e.getEntity().getKiller());
 				
 				/**
 				 *  Increment Winning Kills Tracking 
 				 *   - If new leading kills score
+				 *   - Note: Scoreboard increments itself
 				 */
 				score = kills.getScore(e.getEntity().getKiller());
 				if(score.getScore() > leadingKillsScore)
@@ -334,8 +340,13 @@ public class PVP extends JavaPlugin implements Listener{
 	@EventHandler
 	public void onBlockPlace (BlockPlaceEvent e){
 		if (e.getPlayer().getGameMode()== GameMode.CREATIVE){
-
+			/**
+			 *  Allow any block placement, if Creative Mode
+			 */
 		}else{
+			/**
+			 *  Otherwise, allow only Cobblestone block placement.
+			 */
 			if (e.getBlock().getType() != Material.COBBLESTONE){
 				e.setCancelled(true);
 			}
@@ -348,7 +359,9 @@ public class PVP extends JavaPlugin implements Listener{
 			// only run if player is in survival or adventure mode
 			if (e.getBlock().getType() == Material.COBBLESTONE)
 			{
-				//  Cobblestone is permitted.
+				/**
+				 *  Cobblestone is permitted.
+				 */
 			}
 			else if(e.getBlock().getType() == Material.LONG_GRASS || e.getBlock().getType() == Material.YELLOW_FLOWER || e.getBlock().getType() == Material.RED_ROSE || e.getBlock().getType() == Material.DOUBLE_PLANT)
 			{
@@ -376,7 +389,6 @@ public class PVP extends JavaPlugin implements Listener{
 	
 	@EventHandler
 	public void onPlayerMove(PlayerMoveEvent e ){
-		// player attempted to move
 
 		if( GameState == GameStates.Running){
 
@@ -387,32 +399,47 @@ public class PVP extends JavaPlugin implements Listener{
 				// the player should be outside the bounds of the death cube  
 
 				//getLogger().info(e.getTo().toString());
-				e.getPlayer().damage(5);
-
-
-				fryPlayer(e.getPlayer());
+				if(ACTIVE_FORCE_FIELD.equalsIgnoreCase("Y"))
+				{
+					e.getPlayer().damage(5);
+					fryPlayer(e.getPlayer());
+				}
 			}
 		}
 	}
 
 	@EventHandler
 	public void onPlayerJoin ( PlayerJoinEvent e){
-		if (!(playerTeam.containsKey(e.getPlayer().getName()))){
-			//new player set them up under NONE team and tp them to the lobby first
-			SetPlayersTeam(e.getPlayer(),"NONE");
+		if ((playerTeam.containsKey(e.getPlayer().getName())))
+		{
+			/**
+			 *  Player is on a team already; need to setup his / her scoreboard
+			 *   - If Free-for-All, player will never have been added to HashMap playerTeam
+			 */
+			SetPlayersTeam (e.getPlayer(), getTeamByPlayer(e.getPlayer()).getName() );
+		}
+		else
+		{
+			/**
+			 * Start a new player in the Lobby.
+			 */
 			e.getPlayer().teleport(lobbySpawn );
+			
+			/**
+			 *  If teams, make initial team "NONE"
+			 */
+			if(gameMode.equals("teams"))
+				SetPlayersTeam(e.getPlayer(),"NONE");
+			
 			if (GameState == GameStates.Running){
-				Player[] onePlayer = {e.getPlayer()};
 				
-				assignPlayersToTeams(onePlayer);
+				if(gameMode.equals("teams")) {
+					Player[] onePlayer = {e.getPlayer()};
+					assignPlayersToTeams(onePlayer);					
+				}
 				
 				SpawnPlayerInGame(e.getPlayer());
 			}
-		}else{
-			/**
-			 *  Player is on a team already; need to setup his / her scoreboard 
-			 */
-			SetPlayersTeam (e.getPlayer(), getTeamByPlayer(e.getPlayer()).getName() );
 		}
 	}
 
@@ -493,7 +520,10 @@ public class PVP extends JavaPlugin implements Listener{
 				Bukkit.broadcastMessage("Kills to Win Set: " + KILLS_TO_WIN_GAME);
 			}
 			else
+			{
 				Bukkit.broadcastMessage("No Value Given.  Kills to Win: " + KILLS_TO_WIN_GAME);
+				return false;
+			}
 			
 			return true;  // Return true when a command is executed successfully.
 		}
@@ -538,10 +568,12 @@ public class PVP extends JavaPlugin implements Listener{
 					int minutes = (int) ((SECONDS_TO_END_GAME - gameSecondsCount)/60);
 					int seconds = (gameSecondsCount % 60);
 					Bukkit.broadcastMessage("No Value Given.  Game Time Limit: " + minutes + " minutes, " + seconds + " seconds.");
+					return false;
 				}
 				else
 				{
 					Bukkit.broadcastMessage("No Value Given.  Game Time Limit: " + SECONDS_TO_END_GAME + " seconds.");
+					return false;
 				}
 			}
 			
@@ -576,7 +608,10 @@ public class PVP extends JavaPlugin implements Listener{
 					Bukkit.broadcastMessage("Game Mode Set: " + numTeams + "-Team");
 				}
 				else
+				{
 					Bukkit.broadcastMessage("Error:  No Game Mode");
+					return false;
+				}
 			}
 			else
 			{
@@ -586,6 +621,7 @@ public class PVP extends JavaPlugin implements Listener{
 					Bukkit.broadcastMessage("No Value Given.  Game Mode: " + numTeams + "-Team");
 				else
 					Bukkit.broadcastMessage("Error:  No Game Mode");
+				return false;
 			}
 			
 			return true;  // Return true when a command is executed successfully.
@@ -596,11 +632,15 @@ public class PVP extends JavaPlugin implements Listener{
 	
 	public void gameModeSetup() {
 		if( gameMode.equals("freeforall") ) {
-			
+			/**
+			 *  Do nothing.
+			 *   - Scoreboard is already set up.
+			 */
 		}
 		else if( gameMode.equals("teams") ) {
 			/**
 			 *  Set up Teams
+			 *   - Colors and Scoreboard modifications
 			 */
 			teamsArray = new Team[numTeams];
 			SBTeam = new org.bukkit.scoreboard.Team[numTeams];
@@ -618,19 +658,19 @@ public class PVP extends JavaPlugin implements Listener{
 				
 				teamsArray[i-1] = new Team(name, Color.fromRGB(R, G, B), StringToChatColor(chatColor));
 			}
-		}
-		
-		/**
-		 *  Team Scoreboard Setup
-		 */
-		for(int i=0; i <= numTeams-1; i++)
-		{
-			SBTeam[i] = board.registerNewTeam(teamsArray[i].getName());
-			SBTeam[i].setDisplayName(teamsArray[i].getName());
-			SBTeam[i].setCanSeeFriendlyInvisibles(true);
-			SBTeam[i].setAllowFriendlyFire(false);
-			SBTeam[i].setPrefix(teamsArray[i].getChatColor() +"");
-			SBTeam[i].setSuffix(ChatColor.WHITE+"");
+			
+			/**
+			 *  Team Scoreboard Setup
+			 */
+			for(int i=0; i <= numTeams-1; i++)
+			{
+				SBTeam[i] = board.registerNewTeam(teamsArray[i].getName());
+				SBTeam[i].setDisplayName(teamsArray[i].getName());
+				SBTeam[i].setCanSeeFriendlyInvisibles(true);
+				SBTeam[i].setAllowFriendlyFire(false);
+				SBTeam[i].setPrefix(teamsArray[i].getChatColor() +"");
+				SBTeam[i].setSuffix(ChatColor.WHITE+"");
+			}
 		}
 	}
 
@@ -893,15 +933,6 @@ public class PVP extends JavaPlugin implements Listener{
 			getLogger().warning("CHAT COLOR in Config file unsupported TECH GET ON THAT!" + stringColor);
 			return ChatColor.WHITE;
 		}
-	}
-	
-	public String getFormattedScorboardName(ChatColor chatcolor, String PointName)
-	{
-		if (PointName.length() > 14)
-		{
-			PointName= PointName.substring(0, 14);
-		}
-		return chatcolor + PointName+ ":";
 	}
 	
 	public void addEnchantLevel(Enchantment e, Player p, int maxlevel){
