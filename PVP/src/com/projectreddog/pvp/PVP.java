@@ -544,11 +544,14 @@ public class PVP extends JavaPlugin implements Listener{
 	}
 
 	@EventHandler
-	public void onPlayerRespawn( PlayerRespawnEvent e){
+	public void onPlayerRespawn( PlayerRespawnEvent e){  //  TODO Respawn
 		if( GameState == GameStates.Running){
 			/**
 			 *  If game is running, spawn in game.
 			 */
+			Location tempPoint = spawnPoints[randInt(0, numSpawnPoints-1)];
+			e.setRespawnLocation(tempPoint);
+			
 			SpawnPlayerInGame(e.getPlayer());
 			Bukkit.broadcastMessage("Gamestate: Running");
 			Bukkit.broadcastMessage("Spawn " + e.getPlayer().getName() + " in game.");
@@ -1121,7 +1124,7 @@ public class PVP extends JavaPlugin implements Listener{
 		 *  Choose a Spawn Point at random.
 		 *   - TODO Choose a "safe" Spawn Point
 		 */
-		p.teleport( spawnPoints[randInt(0, numSpawnPoints-1)] );
+		p.teleport( p.getBedSpawnLocation() );
 	}
 	
 	public void GivePlayerGear(Player p ){
