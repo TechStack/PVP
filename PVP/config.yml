@@ -120,7 +120,7 @@ RespawnPoint3:
   Y: 38
   Z: 312
   Yaw: -151
-NumWeapons: 0
+NumWeapons: 4
 Weapon1:
   X: 160
   Y: 70
@@ -129,6 +129,39 @@ Weapon1:
   Amount: 1
   Damage: 0
   NumEnchants: 0
+Weapon2:
+  X: 160
+  Y: 70
+  Z: 291
+  Name: IRON_AXE
+  Amount: 1
+  Damage: 0
+  NumEnchants: 1
   Enchant1:
     ID: 16
-    Level: 3
+    Level: 2
+Weapon3:
+  X: 160
+  Y: 70
+  Z: 291
+  Name: BLAZE_ROD
+  Amount: 1
+  Damage: 0
+  NumEnchants: 1
+  Enchant1:
+    ID: 20
+    Level: 2    
+Weapon4:
+  X: 160
+  Y: 70
+  Z: 291
+  Name: BRICK
+  Amount: 1
+  Damage: 0
+  NumEnchants: 2
+  Enchant1:
+    ID: 19
+    Level: 1
+  Enchant2:
+    ID: 16
+    Level: 1        
