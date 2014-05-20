@@ -130,7 +130,7 @@ public class PVP extends JavaPlugin implements Listener{
 	private static String ACTIVE_FORCE_FIELD; 
 	private static int SECONDS_TO_END_GAME;
 	private static int KILLS_TO_WIN_GAME;
-	private static int MAX_TEAMS = 3;
+	private static int MAX_TEAMS = 4;
 	public int enlightenChance; 
 	private int numSpawnPoints;
 	private int numWeapons;
@@ -193,10 +193,10 @@ public class PVP extends JavaPlugin implements Listener{
 		cubeMinX = this.getConfig().getInt("cubeMinX");
 		cubeMaxZ = this.getConfig().getInt("cubeMaxZ");
 		cubeMinZ = this.getConfig().getInt("cubeMinZ");
-		getLogger().info("MAX X" + cubeMaxX);
-		getLogger().info("Min X" + cubeMinX);
-		getLogger().info("MAX Z" + cubeMaxZ);
-		getLogger().info("Min Z" + cubeMinZ);
+		getLogger().info("MAX X: " + cubeMaxX);
+		getLogger().info("Min X: " + cubeMinX);
+		getLogger().info("MAX Z: " + cubeMaxZ);
+		getLogger().info("Min Z: " + cubeMinZ);
 		
 		double lobbyX, lobbyY, lobbyZ;
 		lobbyX = centerBlockValue(this.getConfig().getInt("LobbySawn.X"));

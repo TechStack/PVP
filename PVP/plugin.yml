@@ -1,12 +1,9 @@
-name: DeathCube
-main: com.projectreddog.deathcube.DeathCube
-version: .02
+name: PVP
+main: com.projectreddog.pvp.PVP
+version: .01
 commands:
    gamestats:
-      description: Shows some statistics about the current DeathCube game.
-      usage: /<command>
-   penalty:
-      description: Shows the current Death Penalty time amount in seconds.
+      description: Shows some statistics about the current PVP game.
       usage: /<command>
    setgamemode:
       description: Sets the Game Mode as Free-for-All or Teams.

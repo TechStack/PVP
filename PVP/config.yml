@@ -1,17 +1,17 @@
 MapName: PVP Default Config
-cubeMaxX: 183
-cubeMinX: 118
-cubeMaxZ: 355
-cubeMinZ: 290 
+cubeMaxX: 205
+cubeMinX: 92
+cubeMaxZ: 360
+cubeMinZ: 245
 ActiveForceField: Y
 GameMode: freeforall
 KillsToWinGame: 25
 SecondsToEndGame: 600
 EnlightenChance: 10
 LobbySawn:
-  X: 155
-  Y: 9
-  Z: 311
+  X: 150
+  Y: 113
+  Z: 321
 Inventory:
   Armor:
     Helmet:
@@ -64,14 +64,14 @@ Inventory:
     Amount: 1
     Level: 1
     Splash: Y
-  NumSpecials: 1
+  NumSpecials: 0
   Special1: COMPASS
   NumEffects: 0
   Effect1:
     Name: SPEED
     Duration: 200000
     Amplifier: 1
-NumTeams: 2
+NumTeams: 4
 Team1: 
   Name: Red
   Armor:
@@ -104,13 +104,23 @@ Team4:
       G: 255
       B: 0
   ChatColor: YELLOW
-NumSpawnPoints: 1
+NumSpawnPoints: 3
 RespawnPoint1:
-  X: 150
-  Y: 70
-  Z: 291
-  Yaw: 1
-NumWeapons: 1
+  X: 135
+  Y: 44
+  Z: 280
+  Yaw: 43
+RespawnPoint2:
+  X: 160
+  Y: 48
+  Z: 293
+  Yaw: 48
+RespawnPoint3:
+  X: 178
+  Y: 38
+  Z: 312
+  Yaw: -151
+NumWeapons: 0
 Weapon1:
   X: 160
   Y: 70
