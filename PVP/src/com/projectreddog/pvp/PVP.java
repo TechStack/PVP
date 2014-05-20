@@ -550,6 +550,8 @@ public class PVP extends JavaPlugin implements Listener{
 			 *  If game is running, spawn in game.
 			 */
 			SpawnPlayerInGame(e.getPlayer());
+			Bukkit.broadcastMessage("Gamestate: Running");
+			Bukkit.broadcastMessage("Spawn " + e.getPlayer().getName() + " in game.");
 		}
 		else 
 		{
@@ -557,6 +559,8 @@ public class PVP extends JavaPlugin implements Listener{
 			 *  If game is not Running, set player respawn to the lobby.
 			 */
 			e.setRespawnLocation(lobbySpawn);
+			Bukkit.broadcastMessage("Gamestate: Not Running");
+			Bukkit.broadcastMessage("Set Respawn Location to Lobby for " + e.getPlayer().getName());
 		}
 	}
 	
@@ -1438,6 +1442,13 @@ public class PVP extends JavaPlugin implements Listener{
 	    return randomNum;
 	}
 	
+	private void weaponGravity() {
+		/**
+		 *  TODO Make weapon float?  Set y-velocity to 0 constantly + reset position?
+		 */
+		
+	}
+	
 	public void showPointVisual(){
 		/**
 		 *  Create visual effect for players on active point.
@@ -1532,6 +1543,11 @@ public class PVP extends JavaPlugin implements Listener{
 			gameTimer();
 			
 			/**
+			 *  TODO Call from visualTicker() ?
+			 */
+			weaponGravity();
+			
+			/**
 			 *  Check for Game Over
 			 */
 			if( gameSecondsCount >= SECONDS_TO_END_GAME || leadingKillsScore >= KILLS_TO_WIN_GAME )
@@ -1594,7 +1610,6 @@ public class PVP extends JavaPlugin implements Listener{
 			}
 		}
 	}
-
 
 	public void StartGame(){
 
