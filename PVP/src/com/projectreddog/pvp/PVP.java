@@ -545,6 +545,8 @@ public class PVP extends JavaPlugin implements Listener{
 				
 				score.setScore(0);
 				
+				e.getPlayer().setScoreboard(board);
+				
 				SpawnPlayerInGame(e.getPlayer(), "no");
 			}
 		}
