@@ -1644,6 +1644,10 @@ public class PVP extends JavaPlugin implements Listener{
 				p.removePotionEffect(effect.getType());
 			}
 			
+			score = kills.getScore(p);
+			
+			score.setScore(0);
+			
 			/**
 			 *  Show scoreboard.
 			 */
