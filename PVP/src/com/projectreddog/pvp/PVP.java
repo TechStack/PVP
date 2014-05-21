@@ -1613,7 +1613,7 @@ public class PVP extends JavaPlugin implements Listener{
 				//	Bukkit.getServer().shutdown();
 
 				//  Call command in the MapVote Plugin to start the vote !
-				Bukkit.getServer().dispatchCommand(Bukkit.getConsoleSender(), "startvote");
+				//Bukkit.getServer().dispatchCommand(Bukkit.getConsoleSender(), "startvote");
 			}
 		}
 	}
