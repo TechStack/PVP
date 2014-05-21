@@ -130,7 +130,7 @@ Weapon1:
   Damage: 0
   NumEnchants: 0
 Weapon2:
-  X: 160
+  X: 161
   Y: 70
   Z: 291
   Name: IRON_AXE
@@ -143,7 +143,7 @@ Weapon2:
 Weapon3:
   X: 160
   Y: 70
-  Z: 291
+  Z: 292
   Name: BLAZE_ROD
   Amount: 1
   Damage: 0
@@ -152,9 +152,9 @@ Weapon3:
     ID: 20
     Level: 2    
 Weapon4:
-  X: 160
+  X: 161
   Y: 70
-  Z: 291
+  Z: 292
   Name: CLAY_BRICK
   Amount: 1
   Damage: 0

@@ -309,7 +309,7 @@ public class PVP extends JavaPlugin implements Listener{
 			 *   - hasGravity() ?
 			 *   - setGravity() ?
 			 */ 
-			Bukkit.getWorld("World").dropItem(weaponLocation, itemStack); //.setVelocity(new Vector());
+			Bukkit.getWorld("World").dropItem(weaponLocation, itemStack).setVelocity(new Vector());
 		}
 		
 		
