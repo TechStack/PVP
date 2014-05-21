@@ -372,6 +372,8 @@ public class PVP extends JavaPlugin implements Listener{
 					else
 						leadingPlayer = killer;
 				}
+				
+				Bukkit.broadcastMessage("Leading Score: " + leadingKillsScore + " - Leader: " + leadingPlayer.getName());
 			}
 			else
 			{
