@@ -363,7 +363,7 @@ public class PVP extends JavaPlugin implements Listener{
 				else
 					score = kills.getScore(killer);
 				
-				if(score.getScore() > leadingKillsScore)
+				if(score.getScore() > leadingKillsScore)  //  TODO Move to timeTicked() and/or track manually (not in scoreboard).
 				{
 					leadingKillsScore = score.getScore();
 					
@@ -783,6 +783,8 @@ public class PVP extends JavaPlugin implements Listener{
 				SBTeam[i].setPrefix(teamsArray[i].getChatColor() +"");
 				SBTeam[i].setSuffix(ChatColor.WHITE+"");
 			}
+			
+			//  TODO  Add offline player and calculate team score there.
 		}
 	}
 
