@@ -122,17 +122,17 @@ RespawnPoint3:
   Yaw: -151
 NumWeapons: 4
 Weapon1:
-  X: 160
-  Y: 70
-  Z: 291
+  X: 150
+  Y: 49
+  Z: 302
   Name: IRON_SWORD
   Amount: 1
   Damage: 0
   NumEnchants: 0
 Weapon2:
-  X: 161
-  Y: 70
-  Z: 291
+  X: 151
+  Y: 49
+  Z: 302
   Name: IRON_AXE
   Amount: 1
   Damage: 0
@@ -141,9 +141,9 @@ Weapon2:
     ID: 16
     Level: 2
 Weapon3:
-  X: 160
-  Y: 70
-  Z: 292
+  X: 150
+  Y: 49
+  Z: 303
   Name: BLAZE_ROD
   Amount: 1
   Damage: 0
@@ -152,9 +152,9 @@ Weapon3:
     ID: 20
     Level: 2    
 Weapon4:
-  X: 161
-  Y: 70
-  Z: 292
+  X: 150
+  Y: 49
+  Z: 303
   Name: CLAY_BRICK
   Amount: 1
   Damage: 0

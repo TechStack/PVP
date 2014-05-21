@@ -1403,10 +1403,7 @@ public class PVP extends JavaPlugin implements Listener{
 			/**
 			 *  Add Enchantment to Item, if possible.  
 			 */
-			if(enchant.canEnchantItem(itemToEnchant))
-			{
-				itemToEnchant.addUnsafeEnchantment(enchant, this.getConfig().getInt(configPrefix + ".Enchant" + j + ".Level"));
-			}
+			itemToEnchant.addUnsafeEnchantment(enchant, this.getConfig().getInt(configPrefix + ".Enchant" + j + ".Level"));
 		}
 		
 		return itemToEnchant;
@@ -1512,7 +1509,7 @@ public class PVP extends JavaPlugin implements Listener{
 			timeTickedTimer = 1;
 			gameSecondsCount++;
 			
-			if( gameSecondsCount == (int) SECONDS_TO_END_GAME * 0.2)
+			if( gameSecondsCount == (int) SECONDS_TO_END_GAME * 0.8)
 			{
 				/**
 				 *  Broadcast message and play sound when game timer nears the End of Game time limit.
