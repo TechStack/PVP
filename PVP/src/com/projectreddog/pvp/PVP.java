@@ -373,7 +373,8 @@ public class PVP extends JavaPlugin implements Listener{
 						leadingPlayer = killer;
 				}
 				
-				Bukkit.broadcastMessage("Leading Score: " + leadingKillsScore + " - Leader: " + leadingPlayer.getName());
+				Bukkit.broadcastMessage("Leading Score: " + leadingKillsScore);
+				Bukkit.broadcastMessage("Leader: " + leadingPlayer.getName());
 			}
 			else
 			{
@@ -539,6 +540,10 @@ public class PVP extends JavaPlugin implements Listener{
 					Player[] onePlayer = {e.getPlayer()};
 					assignPlayersToTeams(onePlayer);					
 				}
+				
+				score = kills.getScore(e.getPlayer());
+				
+				score.setScore(0);
 				
 				SpawnPlayerInGame(e.getPlayer(), "no");
 			}
