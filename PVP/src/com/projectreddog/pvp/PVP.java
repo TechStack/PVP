@@ -538,7 +538,7 @@ public class PVP extends JavaPlugin implements Listener{
 					assignPlayersToTeams(onePlayer);					
 				}
 				
-				SpawnPlayerInGame(e.getPlayer());
+				SpawnPlayerInGame(e.getPlayer(), "no");
 			}
 		}
 	}
@@ -552,9 +552,7 @@ public class PVP extends JavaPlugin implements Listener{
 			Location tempPoint = spawnPoints[randInt(0, numSpawnPoints-1)];
 			e.setRespawnLocation(tempPoint);
 			
-			SpawnPlayerInGame(e.getPlayer());
-			Bukkit.broadcastMessage("Gamestate: Running");
-			Bukkit.broadcastMessage("Spawn " + e.getPlayer().getName() + " in game.");
+			SpawnPlayerInGame(e.getPlayer(), "yes");
 		}
 		else 
 		{
@@ -562,8 +560,6 @@ public class PVP extends JavaPlugin implements Listener{
 			 *  If game is not Running, set player respawn to the lobby.
 			 */
 			e.setRespawnLocation(lobbySpawn);
-			Bukkit.broadcastMessage("Gamestate: Not Running");
-			Bukkit.broadcastMessage("Set Respawn Location to Lobby for " + e.getPlayer().getName());
 		}
 	}
 	
@@ -1110,12 +1106,14 @@ public class PVP extends JavaPlugin implements Listener{
 		}
 	}
 	
-	public void SpawnPlayerInGame (Player p){
+	public void SpawnPlayerInGame (Player p, String isRespawnEvent){
 		if (GameState == GameStates.Running){
 			p.setHealth(p.getMaxHealth());
 			p.setFoodLevel(20);
-			GivePlayerGear (p);
-			PutPlayerOnMap(p);
+			GivePlayerGear(p);
+			
+			if( isRespawnEvent.equals("no") )
+				PutPlayerOnMap(p);
 		}
 	}
 	
@@ -1124,7 +1122,8 @@ public class PVP extends JavaPlugin implements Listener{
 		 *  Choose a Spawn Point at random.
 		 *   - TODO Choose a "safe" Spawn Point
 		 */
-		p.teleport( p.getBedSpawnLocation() );
+		Location tempPoint = spawnPoints[randInt(0, numSpawnPoints-1)];
+		p.teleport( tempPoint );
 	}
 	
 	public void GivePlayerGear(Player p ){
@@ -1646,7 +1645,7 @@ public class PVP extends JavaPlugin implements Listener{
 			/**
 			 *  Join game.
 			 */
-			SpawnPlayerInGame(p);
+			SpawnPlayerInGame(p, "no");
 		}
 	}
 }
