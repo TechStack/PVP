@@ -36,6 +36,8 @@ public class Team {
 	private Boolean bypassForceField = false;
 	
 	private int playerCount = 0;
+	
+	private int teamScore = 0;
 
 	
 	public Team(String name, Color armorColor, ChatColor chatColor) {
@@ -90,5 +92,13 @@ public class Team {
 	
 	public int getPlayerCount() {
 		return playerCount;
+	}
+	
+	public void setTeamScore(int scoreValue) {
+		teamScore = scoreValue;
+	}
+	
+	public int getTeamScore() {
+		return teamScore;
 	}
 }

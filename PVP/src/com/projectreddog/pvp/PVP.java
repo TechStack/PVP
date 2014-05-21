@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.logging.Logger;
+
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Color;
@@ -167,9 +168,9 @@ public class PVP extends JavaPlugin implements Listener{
 	/**
 	 *  Scoreboard Variables
 	 */
-	Objective kills;
-	ScoreboardManager manager;
-	Scoreboard board;
+	Objective kills, teamKills;
+	ScoreboardManager manager, teamManager;
+	Scoreboard killsBoard, teamBoard;
 	org.bukkit.scoreboard.Team[] SBTeam;
 	private Score score;	
 	
@@ -318,11 +319,18 @@ public class PVP extends JavaPlugin implements Listener{
 		 *   - Scoreboard Setup
 		 */
 		manager = Bukkit.getScoreboardManager();
-		board = manager.getNewScoreboard();
+		killsBoard = manager.getNewScoreboard();
 		
-		kills = board.registerNewObjective("kills", "playerKillCount");
+		teamManager = Bukkit.getScoreboardManager();
+		teamBoard = teamManager.getNewScoreboard();
+		
+		kills = killsBoard.registerNewObjective("kills", "dummy");
 		kills.setDisplaySlot(DisplaySlot.SIDEBAR);
 		kills.setDisplayName("Kills:");
+		
+		teamKills = teamBoard.registerNewObjective("teamKills", "dummy");
+		teamKills.setDisplaySlot(DisplaySlot.SIDEBAR);
+		teamKills.setDisplayName("Team Kills:");
 
 		MapName = this.getConfig().getString("MapName");
 		logger.info("Map Name: " + MapName);
@@ -334,7 +342,7 @@ public class PVP extends JavaPlugin implements Listener{
 	}
 	
 	@EventHandler
-	public void onDeath(PlayerDeathEvent e) {
+	public void onDeath(PlayerDeathEvent e) {  //  TODO Track Player Deaths for end-game statistic?
 		
 		Player victim = e.getEntity();
 		
@@ -351,30 +359,7 @@ public class PVP extends JavaPlugin implements Listener{
 				
 				enlighten(killer);
 				
-				/**
-				 *  Increment Winning Kills Tracking 
-				 *   - If new leading kills score
-				 *   - Note: Scoreboard increments itself -> True for Teams?
-				 */
-				if( gameMode.equals("teams"))
-				{
-					score = kills.getScore(Bukkit.getOfflinePlayer( getTeamByPlayer(killer).getChatColor() + getTeamByPlayer(killer).getName() + ": " ));
-				}
-				else
-					score = kills.getScore(killer);
-				
-				if(score.getScore() > leadingKillsScore)  //  TODO Move to timeTicked() and/or track manually (not in scoreboard).
-				{
-					leadingKillsScore = score.getScore();
-					
-					if( gameMode.equals("teams"))
-						leadingTeam = getTeamByPlayer(killer);
-					else
-						leadingPlayer = killer;
-				}
-				
-				Bukkit.broadcastMessage("Leading Score: " + leadingKillsScore);
-				Bukkit.broadcastMessage("Leader: " + leadingPlayer.getName());
+				updateScore(killer, 1);
 			}
 			else
 			{
@@ -384,49 +369,11 @@ public class PVP extends JavaPlugin implements Listener{
 				 *   TODO Make Decrement for Suicide Only
 				 *   - Does this need special handling for teams?
 				 */
-				score = kills.getScore(victim);
-				score.setScore((int) score.getScore() - 1);
 				
-				/**
-				 *  Check if this player was leading in score
-				 *   - If yes, find new leader
-				 */
-				if(leadingPlayer != null)
-				{
-					if(victim == leadingPlayer)
-					{
-						leadingKillsScore = 0;
-						
-						if( gameMode.equals("teams"))
-						{
-							for( Team t : teamsArray)
-							{
-								score = kills.getScore(Bukkit.getOfflinePlayer( t.getChatColor() + t.getName() + ": " ));
-								
-								if(score.getScore() > leadingKillsScore)
-								{
-									leadingKillsScore = score.getScore();
-									leadingTeam = t;
-								}
-							}
-						}
-						else
-						{
-							for( Player p : Bukkit.getOnlinePlayers() )
-							{
-								score = kills.getScore(p);
-								
-								if(score.getScore() > leadingKillsScore)
-								{
-									leadingKillsScore = score.getScore();
-									leadingPlayer = p;
-								}
-							}  //  for( Player p : Bukkit.getOnlinePlayers() )
-						}  //  if( gameMode.equals("teams"))
-					}  //  if(victim == leadingPlayer)
-				}  //  if(leadingPlayer != null)
-			}  //  if(killer instanceof Player)
-		}  //  if(e.getEntity() instanceof Player)
+				updateScore(victim, -1);
+				
+			}
+		}
 		
 		ArrayList<ItemStack>is =new ArrayList<ItemStack>();
 
@@ -545,7 +492,15 @@ public class PVP extends JavaPlugin implements Listener{
 				
 				score.setScore(0);
 				
-				e.getPlayer().setScoreboard(board);
+				/**
+				 *  Show scoreboard.
+				 */
+				if( gameMode.equals("teams") )
+				{
+					e.getPlayer().setScoreboard(teamBoard);
+				}
+				else
+					e.getPlayer().setScoreboard(killsBoard);
 				
 				SpawnPlayerInGame(e.getPlayer(), "no");
 			}
@@ -553,7 +508,7 @@ public class PVP extends JavaPlugin implements Listener{
 	}
 
 	@EventHandler
-	public void onPlayerRespawn( PlayerRespawnEvent e){  //  TODO Respawn
+	public void onPlayerRespawn( PlayerRespawnEvent e){
 		if( GameState == GameStates.Running){
 			/**
 			 *  If game is running, spawn in game.
@@ -605,6 +560,18 @@ public class PVP extends JavaPlugin implements Listener{
 					int seconds = (gameSecondsCount % 60);
 					Bukkit.broadcastMessage("DeathCube - " + MapName + " - Statistics:\n - Game Time Remaining: " + minutes + " minutes, " + seconds + " seconds.\n - Kills to Win: " + KILLS_TO_WIN_GAME + "\n - Game Mode: " + gameModeString);
 				}
+				
+				String player;
+				if(leadingPlayer == null)
+					player = "N/A";
+				else
+					player = leadingPlayer.getName();
+				String team;
+				if(leadingTeam == null)
+					team = "N/A";
+				else
+					team = leadingTeam.getName();
+				Bukkit.broadcastMessage(" - Leading Player = " + player + "\n - Leading Team = " + team + "\n - Leading Score = " + leadingKillsScore);
 			}
 			else if( sender instanceof Player)
 			{
@@ -776,15 +743,13 @@ public class PVP extends JavaPlugin implements Listener{
 			 */
 			for(int i=0; i <= numTeams-1; i++)
 			{
-				SBTeam[i] = board.registerNewTeam(teamsArray[i].getName());
+				SBTeam[i] = teamBoard.registerNewTeam(teamsArray[i].getName());
 				SBTeam[i].setDisplayName(teamsArray[i].getName());
 				SBTeam[i].setCanSeeFriendlyInvisibles(true);
 				SBTeam[i].setAllowFriendlyFire(false);
 				SBTeam[i].setPrefix(teamsArray[i].getChatColor() +"");
 				SBTeam[i].setSuffix(ChatColor.WHITE+"");
 			}
-			
-			//  TODO  Add offline player and calculate team score there.
 		}
 	}
 
@@ -815,7 +780,7 @@ public class PVP extends JavaPlugin implements Listener{
 				 *  Add back to correct scoreboard team and show player the scoreboard
 				 */
 				SBTeam[i].addPlayer(p);
-				p.setScoreboard(board);
+				//p.setScoreboard(killsBoard);  //  Done at startGame() and onPlayerJoin()
 			}
 		}
 		if (TeamName.equals("NONE"))
@@ -831,7 +796,7 @@ public class PVP extends JavaPlugin implements Listener{
 			/**
 			 *  Show player the scoreboard
 			 */
-			p.setScoreboard(board);
+			//p.setScoreboard(killsBoard);  //  Done at startGame() and onPlayerJoin()
 		}
 	}
 
@@ -1049,6 +1014,15 @@ public class PVP extends JavaPlugin implements Listener{
 		}
 	}
 	
+	public String getFormattedScorboardName(ChatColor chatcolor, String displayName)
+	{
+		if (displayName.length() > 14)
+		{
+			displayName= displayName.substring(0, 14);
+		}
+		return chatcolor + displayName+ ":";
+	}
+	
 	public void addEnchantLevel(Enchantment e, Player p, int maxlevel){
 		int currLevel;
 		currLevel= p.getItemInHand().getEnchantmentLevel(e);
@@ -1106,6 +1080,119 @@ public class PVP extends JavaPlugin implements Listener{
 				addEnchantLevel(tmpHoldEnchantment,p,5);
 			}
 		}
+	}
+	
+	public void updateScore(Player updatePlayer, int scoreChange) {
+		/**
+		 *  Add scoreChange to Player's Score
+		 */
+		score = kills.getScore(updatePlayer);
+		score.setScore((int) score.getScore() + scoreChange);
+		
+		if( gameMode.equals("teams"))
+		{
+			/**
+			 *  Recalculate Team's Score
+			 */
+			calculateTeamScore(getTeamByPlayer(updatePlayer));
+			
+			/**
+			 *  Update Teams Scoreboard
+			 */
+			Team tempTeam = getTeamByPlayer(updatePlayer);
+			String teamScoreboardName = getFormattedScorboardName(tempTeam.getChatColor(), tempTeam.getName());
+			score = teamKills.getScore(Bukkit.getOfflinePlayer(teamScoreboardName));
+			score.setScore(tempTeam.getTeamScore());
+		}
+		
+		/**
+		 *  Check if new score is greater than leadingKillsScore.
+		 *   - Applies for either Teams or Free-for-All
+		 *      -- FFA score object is overwritten if gameMode is Teams
+		 */
+		if(score.getScore() > leadingKillsScore)
+		{
+			leadingKillsScore = score.getScore();
+			
+			if( gameMode.equals("teams"))
+				leadingTeam = getTeamByPlayer(updatePlayer);
+			else
+				leadingPlayer = updatePlayer;
+		}
+		
+		/**
+		 *  If scoreChange was negative, may need to recalculate new leading player/team.
+		 *  
+		 */
+		if( scoreChange < 0 )
+		{
+			if( gameMode.equals("teams") && leadingTeam != null )
+			{
+				/**
+				 *  If Player was on the Leading Team
+				 */
+				if( getTeamByPlayer(updatePlayer).getName() == leadingTeam.getName() )
+				{
+					/**
+					 *  Find new leading Team
+					 */
+					leadingKillsScore = score.getScore();
+					
+					for( Team t : teamsArray)
+					{
+						Team tempTeam = getTeamByPlayer(updatePlayer);
+						String teamScoreboardName = getFormattedScorboardName(tempTeam.getChatColor(), tempTeam.getName());
+						score = teamKills.getScore(Bukkit.getOfflinePlayer(teamScoreboardName));
+						
+						if(score.getScore() > leadingKillsScore)
+						{
+							leadingKillsScore = score.getScore();
+							leadingTeam = t;
+						}
+					}
+				}
+			}
+			else if( gameMode.equals("freeforall") && leadingPlayer != null )
+			{
+				/**
+				 *  If Player was Leading in Kills
+				 */
+				if( updatePlayer.getName() == leadingPlayer.getName() )
+				{
+					/**
+					 *  Find new leading Player
+					 */
+					leadingKillsScore = score.getScore();
+					
+					for( Player p : Bukkit.getOnlinePlayers() )
+					{
+						score = kills.getScore(p);
+						
+						if(score.getScore() > leadingKillsScore)
+						{
+							leadingKillsScore = score.getScore();
+							leadingPlayer = p;
+						}
+					}
+					
+				}
+			}  
+		}
+	}
+	
+	public void calculateTeamScore(Team t) {
+		
+		int tempScore = 0;
+		
+		for (Player p : Bukkit.getOnlinePlayers())
+		{
+			if (playerTeam.get(p.getName()).equals(t.getName())){
+				score = kills.getScore(p);
+				tempScore += score.getScore();
+			}
+		}
+		
+		t.setTeamScore(tempScore);
 	}
 	
 	public void playSoundForTeam( String teamName, Sound snd, float volume, float pitch){
@@ -1646,6 +1733,14 @@ public class PVP extends JavaPlugin implements Listener{
 			score.setScore(0);
 		}
 		
+		if( gameMode.equals("teams") )
+		{
+			for( Team t : teamsArray )
+			{
+				calculateTeamScore(t);
+			}
+		}
+		
 		for (Player p : Bukkit.getOnlinePlayers())
 		{
 			/**
@@ -1665,7 +1760,12 @@ public class PVP extends JavaPlugin implements Listener{
 			/**
 			 *  Show scoreboard.
 			 */
-			p.setScoreboard(board);
+			if( gameMode.equals("teams") )
+			{
+				p.setScoreboard(teamBoard);
+			}
+			else
+				p.setScoreboard(killsBoard);
 			
 			/**
 			 *  Join game.
