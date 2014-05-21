@@ -1566,12 +1566,11 @@ public class PVP extends JavaPlugin implements Listener{
 				
 				if( gameMode.equals("freeforall") )
 				{
+					Bukkit.broadcastMessage(leadingPlayer.getName() + " Wins!");
+					
 					for (Player p: Bukkit.getOnlinePlayers()){
 						if(p == leadingPlayer)
-						{
-							Bukkit.broadcastMessage(p + " Wins!");
 							p.playSound(p.getLocation(), Sound.ENDERDRAGON_DEATH, 1, 1);
-						}
 						else
 							p.playSound(p.getLocation(), Sound.ZOMBIE_IDLE, 10, (float) 0.25);
 					}	
