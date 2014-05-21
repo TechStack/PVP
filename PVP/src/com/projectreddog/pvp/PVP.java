@@ -1639,6 +1639,13 @@ public class PVP extends JavaPlugin implements Listener{
 
 		for (Player p : Bukkit.getOnlinePlayers())
 		{
+			score = kills.getScore(p);
+			
+			score.setScore(0);
+		}
+		
+		for (Player p : Bukkit.getOnlinePlayers())
+		{
 			/**
 			 *  Avoid death by falling.
 			 */
@@ -1652,10 +1659,6 @@ public class PVP extends JavaPlugin implements Listener{
 			{
 				p.removePotionEffect(effect.getType());
 			}
-			
-			score = kills.getScore(p);
-			
-			score.setScore(0);
 			
 			/**
 			 *  Show scoreboard.
