@@ -1512,12 +1512,17 @@ public class PVP extends JavaPlugin implements Listener{
 			timeTickedTimer = 1;
 			gameSecondsCount++;
 			
-			if( (SECONDS_TO_END_GAME - gameSecondsCount) == 120)
+			if( gameSecondsCount == (int) SECONDS_TO_END_GAME * 0.2)
 			{
 				/**
 				 *  Broadcast message and play sound when game timer nears the End of Game time limit.
 				 */
-				Bukkit.broadcastMessage("Warning - Remaining Time: " + (int) SECONDS_TO_END_GAME/60 + " minutes.");
+				if( (SECONDS_TO_END_GAME - gameSecondsCount) < 60 )
+					Bukkit.broadcastMessage("Warning - Remaining Time: " + (SECONDS_TO_END_GAME - gameSecondsCount) + " seconds.");
+				else
+				{
+					Bukkit.broadcastMessage("Warning - Remaining Time: " + (int) (SECONDS_TO_END_GAME - gameSecondsCount)/60 + " minutes.");
+				}
 				
 				for (Player p : Bukkit.getOnlinePlayers())
 				{
@@ -1561,11 +1566,12 @@ public class PVP extends JavaPlugin implements Listener{
 				
 				if( gameMode.equals("freeforall") )
 				{
-					Bukkit.broadcastMessage(leadingPlayer + " Wins!");
-					
 					for (Player p: Bukkit.getOnlinePlayers()){
 						if(p == leadingPlayer)
+						{
+							Bukkit.broadcastMessage(p + " Wins!");
 							p.playSound(p.getLocation(), Sound.ENDERDRAGON_DEATH, 1, 1);
+						}
 						else
 							p.playSound(p.getLocation(), Sound.ZOMBIE_IDLE, 10, (float) 0.25);
 					}	
@@ -1641,6 +1647,11 @@ public class PVP extends JavaPlugin implements Listener{
 			{
 				p.removePotionEffect(effect.getType());
 			}
+			
+			/**
+			 *  Show scoreboard.
+			 */
+			p.setScoreboard(board);
 			
 			/**
 			 *  Join game.

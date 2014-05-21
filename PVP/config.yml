@@ -155,7 +155,7 @@ Weapon4:
   X: 160
   Y: 70
   Z: 291
-  Name: BRICK
+  Name: CLAY_BRICK
   Amount: 1
   Damage: 0
   NumEnchants: 2
