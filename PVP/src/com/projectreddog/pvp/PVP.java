@@ -17,10 +17,11 @@
  * from Dustin Frysinger.
  */
 
-package com.projectreddog.pvp;
+package com.projectreddog.pvp;                 //   TODO   ------------------ Add Kill Streaks Code from DeathCube.
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -79,9 +80,9 @@ import org.bukkit.util.Vector;
  *       -- Running
  *       -- Game Over
  *    - Free-for-All PVP Combat
- *    - Team PVP Combat - TODO Scoreboard tracks combined team players' kills?
+ *    - Team PVP Combat
  *    - Spawn Points
- *       -- Safe spawn points TODO
+ *       -- Safe spawn points
  *    - Power-ups  TODO
  *       -- Add Effects or Enchantments
  *       -- Visual Effect / Collectible
@@ -133,7 +134,11 @@ public class PVP extends JavaPlugin implements Listener{
 	private static String ACTIVE_FORCE_FIELD; 
 	private static int SECONDS_TO_END_GAME;
 	private static int KILLS_TO_WIN_GAME;
-	private static int MAX_TEAMS = 4;
+	private static final int MAX_TEAMS = 4;
+	private static final int KILL_STREAK_TIME = 4;
+	private static final int WEAPON_SPAWN_INTERVAL = 30;
+	private Map<Player, Integer> killStreakTimer;
+	private Map<Player, Integer> killStreakMultiplier;
 	public int enlightenChance; 
 	private int numSpawnPoints;
 	private int numWeapons;
@@ -257,7 +262,7 @@ public class PVP extends JavaPlugin implements Listener{
 		
 		
 		/**
-		 * ======================================  On-Map Weapons Setup ======================================  TODO
+		 * ======================================  On-Map Weapons Setup ======================================
 		 *  - Get number of on-map weapons
 		 *  - Create array of Weapon objects to be used to spawn and track the Weapon
 		 *  - From the config file, create weapon object and add to the array
@@ -293,26 +298,20 @@ public class PVP extends JavaPlugin implements Listener{
 			if(this.getConfig().getInt("Weapon" + i + ".Damage") != 0)
 			{
 				damage = this.getConfig().getInt("Weapon" + i + ".Damage");
-				
-				itemStack = new ItemStack(material, amount, (short) damage);
 			}
-			else
-			{
-				itemStack = new ItemStack(material, amount);
-			}
+			
+			/**
+			 *  Create Weapon Object
+			 */
+			weapons[i-1] = new Weapon(weaponLocation, material, amount, damage);
 			
 			/**
 			 *  Enchant Item
 			 */
 			String configPrefix = "Weapon" + i;
-			enchantItem(configPrefix, itemStack);
-			
-			/**
-			 *  Do something with the ItemStack
-			 *   - hasGravity() ?
-			 *   - setGravity() ?
-			 */ 
-			Bukkit.getWorld("World").dropItem(weaponLocation, itemStack).setVelocity(new Vector());
+			ItemStack tempIS = weapons[i-1].getWeaponItemStack();
+			enchantItem(configPrefix, tempIS);
+			weapons[i-1].setWeaponItemStack(tempIS);
 		}
 		
 		
@@ -348,6 +347,14 @@ public class PVP extends JavaPlugin implements Listener{
 		
 		Player victim = e.getEntity();
 		
+		/**
+		 *  Remove them from the Kill Streak Timer, if they're on it.
+		 */
+		if( killStreakTimer.containsKey(victim) ) {
+			victim.setExp(0);
+			killStreakTimer.remove(victim);
+		}
+		
 		if (e.getEntity() instanceof Player){
 			
 			Player killer = e.getEntity().getKiller();
@@ -362,6 +369,46 @@ public class PVP extends JavaPlugin implements Listener{
 				enlighten(killer);
 				
 				updateScore(killer, 1);
+				
+				/**
+				 *  Check Kill Streak
+				 */
+				int streakTime = killStreakTimer.get(killer);
+				
+				if( streakTime > 0 )
+				{
+					/**
+					 *  Already on Killing Streak; increase enlightenment chance or give effect?
+					 */
+					int multiplier = killStreakMultiplier.get(killer) + 1;
+					killStreakMultiplier.put(killer, multiplier);
+					
+					/**
+					 *  TODO Count kills since last respawn.  Killing Spree, Killing Frenzy, etc.
+					 */
+					String streakName = "";
+					switch( multiplier ) {
+					case 2: streakName = "Double Kill!";
+					case 3: streakName = "Triple Kill!";
+					case 4: streakName = "Overkill!";
+					case 5: streakName = "Killtacular!";
+					case 6: streakName = "Killtrocity!";
+					case 7: streakName = "Killimanjaro!";
+					case 8: streakName = "Killtastrophe!";
+					case 9: streakName = "Killpocalypse!";
+					case 10: streakName = "Killionaire!";
+					}
+					((Player)killer).sendMessage(streakName);
+					
+					Bukkit.broadcastMessage(killer.getName() + " - " + streakName);  //  Debug
+				}
+				else
+					killStreakMultiplier.put(killer, 1);
+				
+				/**
+				 *  Allow # seconds to continue kill streak.
+				 */
+				killStreakTimer.put(killer, KILL_STREAK_TIME*20);
 			}
 			else
 			{
@@ -493,6 +540,9 @@ public class PVP extends JavaPlugin implements Listener{
 				score = kills.getScore(e.getPlayer());
 				
 				score.setScore(0);
+				
+				killStreakTimer.put(e.getPlayer(), 0);
+				killStreakMultiplier.put(e.getPlayer(), 0);
 				
 				/**
 				 *  Show scoreboard.
@@ -1042,23 +1092,28 @@ public class PVP extends JavaPlugin implements Listener{
 		return chatcolor + displayName+ ":";
 	}
 	
-	public void addEnchantLevel(Enchantment e, Player p, int maxlevel){
-		int currLevel;
-		currLevel= p.getItemInHand().getEnchantmentLevel(e);
-		if (currLevel< maxlevel){
-			//player is under max level safe to enchant.
-			try {
-				p.getItemInHand().addEnchantment(e, currLevel+1);
-				p.playSound(p.getLocation(), Sound.ANVIL_USE, 1, 1);
-				p.sendMessage("Your skill as a warrior has been proven. You have been granted a higher enchantment!");
-			}
-			finally {
-				// do nothing if an error only put try catch in to prevent errors in case user switches to another weapon in the time
-				//between picking the enchant type till the enchantment is added or if somehow the player killed 2 players close together 
+	public void enlighten(Player p){
+		// this method will enchant a players weapon (sword or bow) 
+		if (willEnlighten(p)){
+			Enchantment tmpHoldEnchantment = getEchantmentByWeaponType(p.getItemInHand().getType());
+			if( tmpHoldEnchantment != null){			
+				addEnchantLevel(tmpHoldEnchantment,p,5);
 			}
 		}
 	}
-
+	
+	public boolean willEnlighten(Player p){
+		// get a random number between 0 and 100
+		double tmp =Math.random()*100;
+		// if the number is less than the enlighten chance then we return true ( should enlighten)
+		if( tmp <= (enlightenChance + 5*killStreakMultiplier.get(p)) ){
+			return true;
+		}else 
+		{
+			return false;
+		}
+	}
+	
 	public Enchantment getEchantmentByWeaponType(Material m){
 		// Will need updated if we add other weapons to the mix 
 		switch (m) {
@@ -1075,28 +1130,21 @@ public class PVP extends JavaPlugin implements Listener{
 		default:
 			return null;
 		}
-
 	}
-
-	public boolean willEnlighten(){
-		// get a random number between 0 and 100
-		double tmp =Math.random()*100;
-		// if the number is less than the enlighten chance then we return true ( should enlighten)
-		if( tmp <= enlightenChance){
-			return true;
-		}else 
-		{
-			return false;
-		}
-
-	}
-
-	public void enlighten(Player p){
-		// this method will enchant a players weapon (sword or bow) 
-		if (willEnlighten()){
-			Enchantment tmpHoldEnchantment = getEchantmentByWeaponType(p.getItemInHand().getType());
-			if( tmpHoldEnchantment != null){			
-				addEnchantLevel(tmpHoldEnchantment,p,5);
+	
+	public void addEnchantLevel(Enchantment e, Player p, int maxlevel){
+		int currLevel;
+		currLevel= p.getItemInHand().getEnchantmentLevel(e);
+		if (currLevel< maxlevel){
+			//player is under max level safe to enchant.
+			try {
+				p.getItemInHand().addEnchantment(e, currLevel+1);
+				p.playSound(p.getLocation(), Sound.ANVIL_USE, 1, 1);
+				p.sendMessage("Your skill as a warrior has been proven. You have been granted a higher enchantment!");
+			}
+			finally {
+				// do nothing if an error only put try catch in to prevent errors in case user switches to another weapon in the time
+				//between picking the enchant type till the enchantment is added or if somehow the player killed 2 players close together 
 			}
 		}
 	}
@@ -1237,7 +1285,6 @@ public class PVP extends JavaPlugin implements Listener{
 	public void PutPlayerOnMap(Player p){
 		/**
 		 *  Choose a Spawn Point at random.
-		 *   - TODO Choose a "safe" Spawn Point
 		 */
 		Boolean safePoint = false;
 		Location tempPoint = spawnPoints[0];
@@ -1583,47 +1630,55 @@ public class PVP extends JavaPlugin implements Listener{
 		
 	}
 	
-	public void showPointVisual(){
+	public void showVisual(Location location, String effectType, String effectType2){
 		/**
-		 *  Create visual effect for players on active point.
+		 *  Create visual effect for weapons or bonus effect locations.
+		 *  TODO  This can be made more efficient by pulling the inner if-statements out to be the 
+		 *  		first thing evaluated.
 		 */
+		Effect effect1 = Effect.ENDER_SIGNAL;
+		Effect effect2 = Effect.SMOKE;
+		
+		Effect showEffectMore, showEffectLess;
+		
+		if( effectType.equals("weapon") )
+			showEffectMore = effect2;
+		else if( effectType.equals("effect") )
+			showEffectMore = effect2;
+		else
+			showEffectMore = null;
+		
+		if( effectType2.equals("weapon") )
+			showEffectLess = null;
+		if( effectType2.equals("effect") )
+			showEffectLess = effect1;
+		else
+			showEffectLess = null;
+		
 		for (Player p : Bukkit.getOnlinePlayers())
 		{
-			Team t = getTeamByPlayer(p);
-			if ( !(t==null)){
-				/**
-				 *  Get location of active point.
-				 */
-
-				Location loc = null;
-				
-				/**
-				 *  Play visual capture point effect for player
-				 */
-				if( visualPointTick2 >= VISUAL_POINT_TICK_LIMIT2 )
-				{
-					p.playEffect(loc, Effect.ENDER_SIGNAL, null);
-				}
-					
-				p.playEffect(loc, Effect.SMOKE, 4);
-				loc.add(0, 1, 0);
-				p.playEffect(loc, Effect.SMOKE, 4);
+			if( visualPointTick2 >= VISUAL_POINT_TICK_LIMIT2 && showEffectLess != null )
+			{
+				p.playEffect(location, showEffectLess, null);
 			}
-		}
-		
-		/**
-		 *  Reset the timer for the longer interval effect (ENDER_SIGNAL).
-		 */
-		if( visualPointTick2 >= VISUAL_POINT_TICK_LIMIT2 )
-		{
-			visualPointTick2 = 0;
+			
+			if( visualPointTick >= VISUAL_POINT_TICK_LIMIT && showEffectMore != null )
+			{
+				p.playEffect(location, showEffectMore, 4);
+				location.add(0, 1, 0);
+				p.playEffect(location, showEffectMore, 4);
+			}
 		}
 	}
 	
 	public void visualTicker() {
-		if(visualPointTick >= VISUAL_POINT_TICK_LIMIT){				
-			showPointVisual();
+		if( visualPointTick > VISUAL_POINT_TICK_LIMIT )
+		{
 			visualPointTick = 0;
+		}
+		else if( visualPointTick2 > VISUAL_POINT_TICK_LIMIT2 )
+		{
+			visualPointTick2 = 0;
 		}
 		else
 		{
@@ -1674,17 +1729,74 @@ public class PVP extends JavaPlugin implements Listener{
 			/**
 			 *  Timer for showing Point Visualization
 			 */
-			//visualTicker();
-				
+			visualTicker();
+			
+			/**
+			 *  Show visuals at weapons and bonus effect locations
+			 */
+			for( Weapon w : weapons )
+			{
+				showVisual(w.getWeaponLocation(), "weapon", null);
+				Bukkit.getWorld("World").dropItem(w.getWeaponLocation(), w.getWeaponItemStack()).setVelocity(new Vector());
+			}
+			
+			/**
+			 *  Track Weapon Entities  TODO
+			 *   - What identifier to use ???
+			 *   - Can I store the entities somehow and check if they exist?
+			 *   - Otherwise, check for nearby entities and determine if they are the weapons by some
+			 *   	kind of identifier
+			 *   - Reset timeLived value so they don't despawn.
+			 *   - Reset velocity and location to make items "float"
+			 *   - Spawn in cobweb
+			 *   - If picked up (check by event instead of in timeTicked()?):
+			 *      -- Start a respawn timer (in Weapon object, or PVP global HashMap?)
+			 *      -- Remove cobweb
+			 */
+			
+			/**
+			 *  TODO Debug.  Spawn weapons every 30 seconds.
+			 */
+			if( gameSecondsCount % WEAPON_SPAWN_INTERVAL == 0 )
+			{
+				for( Weapon w : weapons )
+				{
+					w.getWeaponLocation().getBlock().setType(Material.WEB);
+					Bukkit.getWorld("World").dropItem(w.getWeaponLocation(), w.getWeaponItemStack()).setVelocity(new Vector());
+				}
+			}
+			
 			/**
 			 *  Game Length Timer
 			 */
 			gameTimer();
 			
 			/**
-			 *  TODO Call from visualTicker() ?
+			 *  Process Kill Streak Timer
 			 */
-			weaponGravity();
+			if( killStreakTimer.size() > 0 )
+			{
+				Iterator<Map.Entry<Player, Integer>> it = killStreakTimer.entrySet().iterator();
+
+				while (it.hasNext()) {
+					Map.Entry<Player, Integer> entry = it.next();
+
+					Player p = entry.getKey();
+
+					int killStreakWindow = killStreakTimer.get(p);
+					killStreakWindow -= 10;
+
+					if (killStreakWindow <= 0) {
+						p.setExp(0);
+						killStreakTimer.remove(p);
+						killStreakMultiplier.put(p, 0);
+					} else {
+						float percentRemaining = (float) killStreakWindow / (KILL_STREAK_TIME*20);
+						p.setExp(percentRemaining);
+						killStreakTimer.put(p, killStreakWindow);
+					}
+				}
+			}
 			
 			/**
 			 *  Check for Game Over
@@ -1785,6 +1897,7 @@ public class PVP extends JavaPlugin implements Listener{
 			 */
 			Vector vec = new Vector();
 			p.setVelocity(vec);
+			p.setFallDistance(0);
 			
 			/**
 			 *  Clear all effects acquired in lobby.
@@ -1793,6 +1906,12 @@ public class PVP extends JavaPlugin implements Listener{
 			{
 				p.removePotionEffect(effect.getType());
 			}
+			
+			/**
+			 *  Initialize Kill Streak Time
+			 */
+			killStreakTimer.put(p, 0);
+			killStreakMultiplier.put(p, 0);
 			
 			/**
 			 *  Show scoreboard.
@@ -1808,6 +1927,20 @@ public class PVP extends JavaPlugin implements Listener{
 			 *  Join game.
 			 */
 			SpawnPlayerInGame(p, "no");
+		}
+		
+		/**
+		 *  Spawn Weapons
+		 *   - Set velocity to zero
+		 *   - Spawn in cobweb
+		 *   - Track Entity at location
+		 *      -- Reset time lived
+		 *      -- Respawn timer when picked up
+		 */ 
+		for( Weapon w : weapons )
+		{
+			w.getWeaponLocation().getBlock().setType(Material.WEB);
+			Bukkit.getWorld("World").dropItem(w.getWeaponLocation(), w.getWeaponItemStack()).setVelocity(new Vector());
 		}
 	}
 }

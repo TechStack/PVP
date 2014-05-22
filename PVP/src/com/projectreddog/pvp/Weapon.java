@@ -31,6 +31,10 @@ public class Weapon {
 		return weaponLocation;
 	}
 	
+	public void setWeaponItemStack(ItemStack inWeapon) {
+		weaponItemStack = inWeapon;
+	}
+	
 	public ItemStack getWeaponItemStack() {
 		return weaponItemStack;
 	}
