@@ -43,6 +43,7 @@ import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.enchantments.EnchantmentWrapper;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -51,6 +52,7 @@ import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerPickupItemEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.server.ServerListPingEvent;
 import org.bukkit.inventory.ItemStack;
@@ -301,9 +303,14 @@ public class PVP extends JavaPlugin implements Listener{
 			}
 			
 			/**
+			 *  Get Display Name
+			 */
+			String displayName = this.getConfig().getString("Weapon" + i + ".DisplayName");
+			
+			/**
 			 *  Create Weapon Object
 			 */
-			weapons[i-1] = new Weapon(weaponLocation, material, amount, damage);
+			weapons[i-1] = new Weapon(weaponLocation, material, amount, damage, displayName);
 			
 			/**
 			 *  Enchant Item
@@ -474,6 +481,41 @@ public class PVP extends JavaPlugin implements Listener{
 			else
 			{
 				e.setCancelled(true);
+			}
+		}
+	}
+	
+	@EventHandler
+	public void onItemPickup( PlayerPickupItemEvent e ) {  //  TODO Item Pickup
+		Item item = e.getItem();
+		ItemStack itemStack = item.getItemStack();
+		ItemMeta itemMeta;
+		String displayName;
+		
+		if( itemStack.hasItemMeta() )
+		{
+			itemMeta = itemStack.getItemMeta();
+			
+			if( itemMeta.hasDisplayName() )
+			{
+				displayName = itemMeta.getDisplayName();
+				
+				for( Weapon w : weapons )
+				{
+					if(w.getWeaponItemStack().hasItemMeta())
+					{
+						if( displayName.equals(w.getWeaponItemStack().getItemMeta().getDisplayName()) )
+						{
+							/**
+							 *  Weapon was picked up.
+							 *   - Start a respawn timer.
+							 *   - Remove cobweb block from weapon location.
+							 */
+							w.setRespawnTimer(WEAPON_SPAWN_INTERVAL*20);
+							w.getWeaponLocation().getBlock().setType(Material.AIR);
+						}
+					}
+				}
 			}
 		}
 	}
@@ -1737,32 +1779,58 @@ public class PVP extends JavaPlugin implements Listener{
 			for( Weapon w : weapons )
 			{
 				showVisual(w.getWeaponLocation(), "weapon", null);
-				Bukkit.getWorld("World").dropItem(w.getWeaponLocation(), w.getWeaponItemStack()).setVelocity(new Vector());
-			}
-			
-			/**
-			 *  Track Weapon Entities  TODO
-			 *   - What identifier to use ???
-			 *   - Can I store the entities somehow and check if they exist?
-			 *   - Otherwise, check for nearby entities and determine if they are the weapons by some
-			 *   	kind of identifier
-			 *   - Reset timeLived value so they don't despawn.
-			 *   - Reset velocity and location to make items "float"
-			 *   - Spawn in cobweb
-			 *   - If picked up (check by event instead of in timeTicked()?):
-			 *      -- Start a respawn timer (in Weapon object, or PVP global HashMap?)
-			 *      -- Remove cobweb
-			 */
-			
-			/**
-			 *  TODO Debug.  Spawn weapons every 30 seconds.
-			 */
-			if( gameSecondsCount % WEAPON_SPAWN_INTERVAL == 0 )
-			{
-				for( Weapon w : weapons )
+				
+				/**
+				 *  If respawn timer has a value > 0.
+				 *   - Decrement Weapon Respawn timer.
+				 *   - Flag that it needs respawned.
+				 */
+				int respawnTimeRemaining = w.getRespawnTimer();
+				if( respawnTimeRemaining > 0 )
 				{
-					w.getWeaponLocation().getBlock().setType(Material.WEB);
-					Bukkit.getWorld("World").dropItem(w.getWeaponLocation(), w.getWeaponItemStack()).setVelocity(new Vector());
+					respawnTimeRemaining -= 10;
+					w.setRespawnTimer(respawnTimeRemaining);
+					
+					/**
+					 *  If respawn timer gets to 0, respawn weapon in cobweb.
+					 */
+					if( respawnTimeRemaining <= 0 )
+					{
+						w.getWeaponLocation().getBlock().setType(Material.WEB);
+						Bukkit.getWorld("World").dropItem(w.getWeaponLocation(), w.getWeaponItemStack()).setVelocity(new Vector());
+					}
+				}
+				else
+				{
+					/**
+					 *  Get entities near weapon location.  Check if entity is the weapon.
+					 *   - Set time lived to 0 to prevent de-spawning.
+					 *   - Set velocity to 0 (or slightly positive in Vertical)
+					 *   - Set location to weaponLocation
+					 */
+					double radius = 2D;
+					
+					List<Entity> nearbyEntities = w.getWeaponLocation().getWorld().getEntities();
+					for(Entity e : nearbyEntities) {
+					    if( e instanceof ItemStack )
+					    {
+					    	if(e.getLocation().distance(w.getWeaponLocation()) <= radius)
+					    	{
+					    		if( ((ItemStack)e).hasItemMeta())
+					    		{
+					    			if( ((ItemStack) e).getItemMeta().hasDisplayName() )
+					    			{
+					    				if( ((ItemStack) e).getItemMeta().getDisplayName().equals(w.getWeaponItemStack().getItemMeta().getDisplayName()) )
+					    				{
+					    					e.setTicksLived(0);
+					    					e.setVelocity(new Vector());
+					    					//e.setLocation();  //  TODO  No method to set ItemStack Location ????
+					    				}
+					    			}
+					    		}
+					    	}
+					    }
+					}
 				}
 			}
 			

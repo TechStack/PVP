@@ -128,6 +128,7 @@ Weapon1:
   Name: IRON_SWORD
   Amount: 1
   Damage: 0
+  DisplayName: Pointy!
   NumEnchants: 0
 Weapon2:
   X: 151
@@ -136,6 +137,7 @@ Weapon2:
   Name: IRON_AXE
   Amount: 1
   Damage: 0
+  DisplayName: Sharp Lumber
   NumEnchants: 1
   Enchant1:
     ID: 16
@@ -147,6 +149,7 @@ Weapon3:
   Name: BLAZE_ROD
   Amount: 1
   Damage: 0
+  DisplayName: Hot Stick
   NumEnchants: 1
   Enchant1:
     ID: 20
@@ -158,6 +161,7 @@ Weapon4:
   Name: CLAY_BRICK
   Amount: 1
   Damage: 0
+  DisplayName: Heavy Brick
   NumEnchants: 2
   Enchant1:
     ID: 19
