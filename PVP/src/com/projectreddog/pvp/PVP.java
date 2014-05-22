@@ -21,6 +21,7 @@ package com.projectreddog.pvp;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.logging.Logger;
@@ -40,6 +41,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.enchantments.EnchantmentWrapper;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -558,7 +560,7 @@ public class PVP extends JavaPlugin implements Listener{
 				{
 					int minutes = (int) ((SECONDS_TO_END_GAME - gameSecondsCount)/60);
 					int seconds = (gameSecondsCount % 60);
-					Bukkit.broadcastMessage("DeathCube - " + MapName + " - Statistics:\n - Game Time Remaining: " + minutes + " minutes, " + seconds + " seconds.\n - Kills to Win: " + KILLS_TO_WIN_GAME + "\n - Game Mode: " + gameModeString);
+					Bukkit.broadcastMessage("PVP Match - " + MapName + " - Statistics:\n - Game Time Remaining: " + minutes + " minutes, " + seconds + " seconds.\n - Kills to Win: " + KILLS_TO_WIN_GAME + "\n - Game Mode: " + gameModeString);
 				}
 				
 				String player;
@@ -576,13 +578,25 @@ public class PVP extends JavaPlugin implements Listener{
 			else if( sender instanceof Player)
 			{
 				if( (SECONDS_TO_END_GAME - gameSecondsCount) < 60 )
-					((Player)sender).sendMessage("DeathCube - " + MapName + " - Statistics:\n - Game Time Remaining: " + (SECONDS_TO_END_GAME - gameSecondsCount) + " seconds.\n - Kills to Win: " + KILLS_TO_WIN_GAME + "\n - Game Mode: " + gameModeString);
+					((Player)sender).sendMessage("PVP Match - " + MapName + " - Statistics:\n - Game Time Remaining: " + (SECONDS_TO_END_GAME - gameSecondsCount) + " seconds.\n - Kills to Win: " + KILLS_TO_WIN_GAME + "\n - Game Mode: " + gameModeString);
 				else
 				{
 					int minutes = (int) ((SECONDS_TO_END_GAME - gameSecondsCount)/60);
 					int seconds = (gameSecondsCount % 60);
-					((Player)sender).sendMessage("DeathCube - " + MapName + " - Statistics:\n - Game Time Remaining: " + minutes + " minutes, " + seconds + " seconds.\n - Kills to Win: " + KILLS_TO_WIN_GAME + "\n - Game Mode: " + gameModeString);
+					((Player)sender).sendMessage("PVP Match - " + MapName + " - Statistics:\n - Game Time Remaining: " + minutes + " minutes, " + seconds + " seconds.\n - Kills to Win: " + KILLS_TO_WIN_GAME + "\n - Game Mode: " + gameModeString);
 				}
+				
+				String player;
+				if(leadingPlayer == null)
+					player = "N/A";
+				else
+					player = leadingPlayer.getName();
+				String team;
+				if(leadingTeam == null)
+					team = "N/A";
+				else
+					team = leadingTeam.getName();
+				((Player)sender).sendMessage(" - Leading Player = " + player + "\n - Leading Team = " + team + "\n - Leading Score = " + leadingKillsScore);
 			}
 			
 			return true;  // Return true when a command is executed successfully.
@@ -676,7 +690,12 @@ public class PVP extends JavaPlugin implements Listener{
 					gameMode = "teams";
 					
 					if( args.length > 1)
-						numTeams = Integer.parseInt(args[1]);
+					{
+						if( Integer.parseInt(args[1]) > 1 )
+						{
+							numTeams = Integer.parseInt(args[1]);
+						}
+					}
 					
 					if( numTeams > MAX_TEAMS)
 					{
@@ -1220,7 +1239,25 @@ public class PVP extends JavaPlugin implements Listener{
 		 *  Choose a Spawn Point at random.
 		 *   - TODO Choose a "safe" Spawn Point
 		 */
-		Location tempPoint = spawnPoints[randInt(0, numSpawnPoints-1)];
+		Boolean safePoint = false;
+		Location tempPoint = spawnPoints[0];
+		double radius = 5D;
+		
+		while( !safePoint )
+		{
+			tempPoint = spawnPoints[randInt(0, numSpawnPoints-1)];
+			
+			List<Entity> nearbyEntities = tempPoint.getWorld().getEntities();
+			for(Entity e : nearbyEntities) {
+			    if( e instanceof Player )
+			    {
+			    	if(e.getLocation().distance(tempPoint) <= radius)
+			    		safePoint = false;
+			    	else
+			    		safePoint = true;
+			    }
+			}
+		}
 		p.teleport( tempPoint );
 	}
 	
@@ -1708,7 +1745,7 @@ public class PVP extends JavaPlugin implements Listener{
 				//	Bukkit.getServer().shutdown();
 
 				//  Call command in the MapVote Plugin to start the vote !
-				//Bukkit.getServer().dispatchCommand(Bukkit.getConsoleSender(), "startvote");
+				Bukkit.getServer().dispatchCommand(Bukkit.getConsoleSender(), "startvote");
 			}
 		}
 	}
