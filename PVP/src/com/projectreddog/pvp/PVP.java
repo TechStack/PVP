@@ -137,7 +137,7 @@ public class PVP extends JavaPlugin implements Listener{
 	private static int SECONDS_TO_END_GAME;
 	private static int KILLS_TO_WIN_GAME;
 	private static final int MAX_TEAMS = 4;
-	private static final int KILL_STREAK_TIME = 4;
+	private static final int KILL_STREAK_TIME = 10;
 	private static final int WEAPON_SPAWN_INTERVAL = 30;
 	private Map<Player, Integer> killStreakTimer;
 	private Map<Player, Integer> killStreakMultiplier;
@@ -1698,6 +1698,8 @@ public class PVP extends JavaPlugin implements Listener{
 		 *  TODO  This can be made more efficient by pulling the inner if-statements out to be the 
 		 *  		first thing evaluated.
 		 */
+		Location tempLocation = location;
+		
 		Effect effect1 = Effect.ENDER_SIGNAL;
 		Effect effect2 = Effect.SMOKE;
 		
@@ -1721,14 +1723,14 @@ public class PVP extends JavaPlugin implements Listener{
 		{
 			if( visualPointTick2 >= VISUAL_POINT_TICK_LIMIT2 && showEffectLess != null )
 			{
-				p.playEffect(location, showEffectLess, null);
+				p.playEffect(tempLocation, showEffectLess, null);
 			}
 			
 			if( visualPointTick >= VISUAL_POINT_TICK_LIMIT && showEffectMore != null )
 			{
-				p.playEffect(location, showEffectMore, 4);
-				location.add(0, 1, 0);
-				p.playEffect(location, showEffectMore, 4);
+				p.playEffect(tempLocation, showEffectMore, 4);
+				tempLocation.add(0, 1, 0);
+				p.playEffect(tempLocation, showEffectMore, 4);
 			}
 		}
 	}
