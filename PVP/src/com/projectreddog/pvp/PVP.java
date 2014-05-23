@@ -1698,7 +1698,7 @@ public class PVP extends JavaPlugin implements Listener{
 		 *  TODO  This can be made more efficient by pulling the inner if-statements out to be the 
 		 *  		first thing evaluated.
 		 */
-		Location tempLocation = location;
+		Location tempLocation = new Location(location.getWorld(), location.getX(), location.getY(), location.getZ());
 		
 		Effect effect1 = Effect.ENDER_SIGNAL;
 		Effect effect2 = Effect.SMOKE;
