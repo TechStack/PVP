@@ -174,6 +174,7 @@ Weapon1:
   Amount: 1
   Damage: 0
   DisplayName: Cold Steel
+  SpawnInterval: 30
   NumEnchants: 0
 Weapon2:
   X: 189
@@ -182,7 +183,8 @@ Weapon2:
   Name: IRON_AXE
   Amount: 1
   Damage: 0
-  DisplayName: Display Axe
+  DisplayName: Shiny Axe
+  SpawnInterval: 30
   NumEnchants: 1
   Enchant1:
     ID: 16
@@ -195,6 +197,7 @@ Weapon3:
   Amount: 1
   Damage: 0
   DisplayName: Hot Stick
+  SpawnInterval: 15
   NumEnchants: 1
   Enchant1:
     ID: 20
@@ -207,10 +210,24 @@ Weapon4:
   Amount: 1
   Damage: 0
   DisplayName: Heavy Brick
+  SpawnInterval: 20
   NumEnchants: 2
   Enchant1:
     ID: 19
     Level: 2
   Enchant2:
     ID: 16
-    Level: 1        
+    Level: 1
+Weapon5:
+  X: 149
+  Y: 44
+  Z: 302
+  Name: BOW
+  Amount: 1
+  Damage: 0
+  DisplayName: SpudOfGun
+  SpawnInterval: 40
+  NumEnchants: 1
+  Enchant1:
+    ID: 50
+    Level: 1   

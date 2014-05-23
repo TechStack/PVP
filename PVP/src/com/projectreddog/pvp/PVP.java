@@ -138,11 +138,6 @@ public class PVP extends JavaPlugin implements Listener{
 	private static int SECONDS_TO_END_GAME;
 	private static int KILLS_TO_WIN_GAME;
 	private static final int MAX_TEAMS = 4;
-	private static final int KILL_STREAK_TIME = 10;
-	private static final int WEAPON_SPAWN_INTERVAL = 30;
-	private Map<Player, Integer> killStreakTimer;
-	private Map<Player, Integer> killStreakMultiplier;
-	private Map<Player, Integer> killsSinceLastDeath;
 	public int enlightenChance; 
 	private int numSpawnPoints;
 	private int numWeapons;
@@ -151,6 +146,7 @@ public class PVP extends JavaPlugin implements Listener{
 	private int leadingKillsScore = 0;
 	private Player leadingPlayer;
 	private Team leadingTeam;
+	private Statistics gameStats;
 	
 	/**
 	 *  Team Variables
@@ -171,10 +167,10 @@ public class PVP extends JavaPlugin implements Listener{
 	/**
 	 *  Visualization Variables
 	 */
-	private static final int VISUAL_POINT_TICK_LIMIT = 1;
-	private static final int VISUAL_POINT_TICK_LIMIT2 = 3;
-	private int visualPointTick = VISUAL_POINT_TICK_LIMIT;
-	private int visualPointTick2 = VISUAL_POINT_TICK_LIMIT2;
+	private static final int SHORT_TICK_LIMIT = 1;
+	private static final int LONG_TICK_LIMIT = 3;
+	private int shortTick = SHORT_TICK_LIMIT;
+	private int longTick = LONG_TICK_LIMIT;
 	
 	/**
 	 *  Scoreboard Variables
@@ -192,9 +188,6 @@ public class PVP extends JavaPlugin implements Listener{
 		 */
 		GameState = GameStates.Lobby;
 		playerTeam = new HashMap<String, String>();
-		killStreakTimer = new HashMap<Player, Integer>();
-		killStreakMultiplier = new HashMap<Player, Integer>();
-		killsSinceLastDeath = new HashMap<Player, Integer>();
 
 		getServer().getPluginManager().registerEvents(this, this);
 		logger = this.getLogger();
@@ -313,9 +306,14 @@ public class PVP extends JavaPlugin implements Listener{
 			String displayName = this.getConfig().getString("Weapon" + i + ".DisplayName");
 			
 			/**
+			 *  Get Display Name
+			 */
+			int spawnInterval = this.getConfig().getInt("Weapon" + i + ".SpawnInterval");
+			
+			/**
 			 *  Create Weapon Object
 			 */
-			weapons[i-1] = new Weapon(weaponLocation, material, amount, damage, displayName);
+			weapons[i-1] = new Weapon(weaponLocation, material, amount, damage, displayName, spawnInterval);
 			
 			/**
 			 *  Enchant Item
@@ -355,152 +353,43 @@ public class PVP extends JavaPlugin implements Listener{
 	}
 	
 	@EventHandler
-	public void onDeath(PlayerDeathEvent e) {  //  TODO Track Player Deaths for end-game statistic?
+	public void onDeath(PlayerDeathEvent e) {
 		
 		if (GameState == GameStates.Running){
-		
+			Player killer = null;
 			Player victim = e.getEntity();
 			
-			/**
-			 *  Remove them from the Kill Streak Timer, if they're on it.
-			 */
-			if( killStreakTimer.containsKey(victim) ) {
-				victim.setExp(0);
-				killStreakTimer.put(victim, 0);
-				killsSinceLastDeath.put(victim, 0);
+			if(victim.getKiller() instanceof Player)
+				killer = victim.getKiller();
+			
+			if ( killer != null ){
+				/**
+				 *  A player killed another player.  Allow chance to enlighten the killer.
+				 *  
+				 *  Also, increment scoreboard (Kills).
+				 */
+				
+				enlighten(killer);
+				
+				updateScore(killer, 1);
+			}
+			else
+			{
+				/**
+				 *  Decrement Score for this Player
+				 *   - Death Reason: Suicide or non-Player Killer
+				 *   TODO Make Decrement for Suicide Only
+				 *   - Does this need special handling for teams?
+				 */
+				
+				updateScore(victim, -1);
+				
 			}
 			
-			if (e.getEntity() instanceof Player){
-				
-				Player killer = e.getEntity().getKiller();
-				
-				if (killer instanceof Player){
-					/**
-					 *  A player killed another player.  Allow chance to enlighten the killer.
-					 *  
-					 *  Also, increment scoreboard (Kills).
-					 */
-					
-					enlighten(killer);
-					
-					updateScore(killer, 1);
-					
-					int runningKills = killsSinceLastDeath.get(killer);
-					killsSinceLastDeath.put(killer, runningKills++);
-					
-					
-					/**
-					 *  Check Kill Streak
-					 */
-					int streakTime = killStreakTimer.get(killer);
-					
-					if( streakTime > 0 )
-					{
-						/**
-						 *  Already on Killing Streak; increase enlightenment chance or give effect?
-						 */
-						int multiplier = killStreakMultiplier.get(killer) + 1;
-						killStreakMultiplier.put(killer, multiplier);
-						
-						/**
-						 *  TODO Count kills since last respawn.  Killing Spree, Killing Frenzy, etc.
-						 */
-						String streakName = "";
-						switch( multiplier ) {
-						case 2:
-							streakName = "Double Kill!";
-							break;
-						case 3:
-							streakName = "Triple Kill!";
-							break;
-						case 4:
-							streakName = "Overkill!";
-							break;
-						case 5:
-							streakName = "Killtacular!";
-							break;
-						case 6:
-							streakName = "Killtrocity!";
-							break;
-						case 7:
-							streakName = "Killimanjaro!";
-							break;
-						case 8:
-							streakName = "Killtastrophe!";
-							break;
-						case 9:
-							streakName = "Killpocalypse!";
-							break;
-						case 10:
-							streakName = "Killionaire!";
-							break;
-						}
-						
-						if( multiplier < 10 )
-							((Player)killer).sendMessage(streakName);
-						else
-							((Player)killer).sendMessage(multiplier + "x Kill Streak!");
-					}
-					else
-						killStreakMultiplier.put(killer, 1);
-					
-					/**
-					 *  Check Kills Since Last Death
-					 */
-					if( runningKills >= 5 )
-					{
-						String spreeName = "";
-						switch( runningKills ) {
-						case 5:
-							spreeName = "Killing Spree!";
-							break;
-						case 10:
-							spreeName = "Killing Frenzy!";
-							break;
-						case 15:
-							spreeName = "Running Riot!";
-							break;
-						case 20:
-							spreeName = "Rampage!";
-							break;
-						case 25:
-							spreeName = "Untouchable!";
-							break;
-						case 30:
-							spreeName = "Invincible!";
-							break;
-						}
-						
-						if( runningKills <= 30 )
-						{
-							((Player)killer).sendMessage(spreeName);
-							Bukkit.broadcastMessage(killer.getName() + " - " + spreeName);
-						}
-						else if( runningKills > 30 )
-						{
-							if( runningKills % 5 == 0 )
-								((Player)killer).sendMessage(runningKills + " Kill Spree!");
-						}
-					}
-					
-					/**
-					 *  Allow # seconds to continue kill streak.
-					 */
-					killStreakTimer.put(killer, KILL_STREAK_TIME*20);
-				}
-				else
-				{
-					/**
-					 *  Decrement Score for this Player
-					 *   - Death Reason: Suicide or non-Player Killer
-					 *   TODO Make Decrement for Suicide Only
-					 *   - Does this need special handling for teams?
-					 */
-					
-					updateScore(victim, -1);
-					
-				}
-			}
+			/**
+			 *  Update Game Statistics
+			 */
+			gameStats.updateStatistics(victim, killer);
 			
 			ArrayList<ItemStack>is =new ArrayList<ItemStack>();
 
@@ -558,7 +447,7 @@ public class PVP extends JavaPlugin implements Listener{
 	}
 	
 	@EventHandler
-	public void onItemPickup( PlayerPickupItemEvent e ) {  //  TODO Item Pickup
+	public void onItemPickup( PlayerPickupItemEvent e ) {
 		Item item = e.getItem();
 		ItemStack itemStack = item.getItemStack();
 		ItemMeta itemMeta;
@@ -583,8 +472,7 @@ public class PVP extends JavaPlugin implements Listener{
 							 *   - Start a respawn timer.
 							 *   - Remove cobweb block from weapon location.
 							 */
-							w.setRespawnTimer(WEAPON_SPAWN_INTERVAL*20);
-							w.getWeaponLocation().getBlock().setType(Material.AIR);
+							w.pickedUp();
 						}
 					}
 				}
@@ -655,9 +543,7 @@ public class PVP extends JavaPlugin implements Listener{
 				
 				score.setScore(0);
 				
-				killStreakTimer.put(e.getPlayer(), 0);
-				killStreakMultiplier.put(e.getPlayer(), 0);
-				killsSinceLastDeath.put(e.getPlayer(), 0);
+				gameStats.addPlayer(e.getPlayer());
 				
 				/**
 				 *  Show scoreboard.
@@ -1221,7 +1107,7 @@ public class PVP extends JavaPlugin implements Listener{
 		// get a random number between 0 and 100
 		double tmp =Math.random()*100;
 		// if the number is less than the enlighten chance then we return true ( should enlighten)
-		if( tmp <= (enlightenChance + 5*killStreakMultiplier.get(p)) ){
+		if( tmp <= (enlightenChance + 5*gameStats.getMultiplier(p)) ){
 			return true;
 		}else 
 		{
@@ -1760,66 +1646,19 @@ public class PVP extends JavaPlugin implements Listener{
 	    return randomNum;
 	}
 	
-	private void weaponGravity() {
-		/**
-		 *  TODO Make weapon float?  Set y-velocity to 0 constantly + reset position?
-		 */
-		
-	}
-	
-	public void showVisual(Location location, String effectType, String effectType2){
-		/**
-		 *  Create visual effect for weapons or bonus effect locations.
-		 *  TODO  This can be made more efficient by pulling the inner if-statements out to be the 
-		 *  		first thing evaluated.
-		 */
-		Location tempLocation = new Location(location.getWorld(), location.getX(), location.getY(), location.getZ());
-		
-		Effect effect1 = Effect.ENDER_SIGNAL;
-		Effect effect2 = Effect.SMOKE;
-		
-		Effect showEffectMore, showEffectLess;
-		
-		if( effectType.equals("weapon") )
-			showEffectMore = effect2;
-		else if( effectType.equals("effect") )
-			showEffectMore = effect2;
-		else
-			showEffectMore = null;
-		
-		if( effectType2.equals("weapon") )
-			showEffectLess = null;
-		if( effectType2.equals("effect") )
-			showEffectLess = effect1;
-		else
-			showEffectLess = null;
-		
-		if( visualPointTick2 >= VISUAL_POINT_TICK_LIMIT2 && showEffectLess != null )
-		{
-			Bukkit.getWorld("world").playEffect(tempLocation, showEffectLess, null);
-		}
-		
-		if( visualPointTick >= VISUAL_POINT_TICK_LIMIT && showEffectMore != null )
-		{
-			Bukkit.getWorld("world").playEffect(tempLocation, showEffectMore, 4);
-			tempLocation.add(0, 1, 0);
-			Bukkit.getWorld("world").playEffect(tempLocation, showEffectMore, 4);
-		}
-	}
-	
 	public void visualTicker() {
-		if( visualPointTick > VISUAL_POINT_TICK_LIMIT )
+		if( shortTick > SHORT_TICK_LIMIT )
 		{
-			visualPointTick = 0;
+			shortTick = 0;
 		}
-		else if( visualPointTick2 > VISUAL_POINT_TICK_LIMIT2 )
+		else if( longTick > LONG_TICK_LIMIT )
 		{
-			visualPointTick2 = 0;
+			longTick = 0;
 		}
 		else
 		{
-			visualPointTick++;
-			visualPointTick2++;
+			shortTick++;
+			longTick++;
 		}
 	}
 	
@@ -1873,58 +1712,9 @@ public class PVP extends JavaPlugin implements Listener{
 			 */
 			for( Weapon w : weapons )
 			{
-				showVisual(w.getWeaponLocation(), "weapon", "none");
+				w.weaponVisual(shortTick, SHORT_TICK_LIMIT, longTick, LONG_TICK_LIMIT);
 				
-				/**
-				 *  If respawn timer has a value > 0.
-				 *   - Decrement Weapon Respawn timer.
-				 *   - Flag that it needs respawned.
-				 */
-				int respawnTimeRemaining = w.getRespawnTimer();
-				if( respawnTimeRemaining > 0 )
-				{
-					respawnTimeRemaining -= 10;
-					w.setRespawnTimer(respawnTimeRemaining);
-					
-					/**
-					 *  If respawn timer gets to 0, respawn weapon in cobweb.
-					 */
-					if( respawnTimeRemaining <= 0 )
-					{
-						w.getWeaponLocation().getBlock().setType(Material.WEB);
-						Bukkit.getWorld("World").dropItem(w.getWeaponLocation(), w.getWeaponItemStack()).setVelocity(new Vector());
-					}
-				}
-				else
-				{
-					/**
-					 *  Get entities near weapon location.  Check if entity is the weapon.
-					 *   - Set time lived to 0 to prevent de-spawning.
-					 *   - Set velocity to 0 (or slightly positive in Vertical)
-					 *   - Set location to weaponLocation
-					 */
-					Arrow tempArrow = Bukkit.getWorld("world").spawnArrow(w.getWeaponLocation(), new Vector(), 0, 0);
-					List<Entity> nearbyEntities = tempArrow.getNearbyEntities(2, 2, 2);
-					tempArrow.remove();  //  Does this need to wait until after using nearbyEntities?
-					
-					for(Entity e : nearbyEntities) {
-					    if( e instanceof ItemStack )
-					    {
-					    	if( ((ItemStack)e).hasItemMeta())
-				    		{
-				    			if( ((ItemStack) e).getItemMeta().hasDisplayName() )
-				    			{
-				    				if( ((ItemStack) e).getItemMeta().getDisplayName().equals(w.getWeaponItemStack().getItemMeta().getDisplayName()) )
-				    				{
-				    					e.setTicksLived(0);
-				    					e.setVelocity(new Vector());
-				    					e.teleport(w.getWeaponLocation());  //  Check if this causes a visual glitchy effect
-				    				}
-				    			}
-				    		}
-					    }
-					}
-				}
+				w.processWeapon();
 			}
 			
 			/**
@@ -1935,29 +1725,7 @@ public class PVP extends JavaPlugin implements Listener{
 			/**
 			 *  Process Kill Streak Timer
 			 */
-			if( killStreakTimer.size() > 0 )
-			{
-				Iterator<Map.Entry<Player, Integer>> it = killStreakTimer.entrySet().iterator();
-
-				while (it.hasNext()) {
-					Map.Entry<Player, Integer> entry = it.next();
-
-					Player p = entry.getKey();
-
-					int killStreakWindow = killStreakTimer.get(p);
-					killStreakWindow -= 10;
-
-					if (killStreakWindow <= 0) {
-						p.setExp(0);
-						killStreakTimer.put(p, 0);
-						killStreakMultiplier.put(p, 0);
-					} else {
-						float percentRemaining = (float) killStreakWindow / (KILL_STREAK_TIME*20);
-						p.setExp(percentRemaining);
-						killStreakTimer.put(p, killStreakWindow);
-					}
-				}
-			}
+			gameStats.processKillStreakTimer();
 			
 			/**
 			 *  Check for Game Over
@@ -1991,6 +1759,8 @@ public class PVP extends JavaPlugin implements Listener{
 							playSoundForTeam(t.getName(), Sound.ZOMBIE_IDLE, 10, (float) 0.25);
 					}	
 				}
+				
+				gameStats.showStats();
 			}
 				
 		}else if  ( GameState == GameStates.Lobby){
@@ -2027,6 +1797,8 @@ public class PVP extends JavaPlugin implements Listener{
 
 		Bukkit.getServer().getWorld("World").playSound(lobbySpawn,  Sound.BAT_DEATH, 100, 1);
 		
+		gameStats = new Statistics();
+		
 		gameModeSetup();
 		
 		if( gameMode.equals("teams") )
@@ -2048,6 +1820,13 @@ public class PVP extends JavaPlugin implements Listener{
 			for( Team t : teamsArray )
 			{
 				calculateTeamScore(t);
+				
+				/**
+				 *  Update Teams Scoreboard
+				 */
+				String teamScoreboardName = getFormattedScorboardName(t.getChatColor(), t.getName());
+				score = teamKills.getScore(Bukkit.getOfflinePlayer(teamScoreboardName));
+				score.setScore(t.getTeamScore());
 			}
 		}
 		
@@ -2069,13 +1848,6 @@ public class PVP extends JavaPlugin implements Listener{
 			}
 			
 			/**
-			 *  Initialize Kill Streak Time
-			 */
-			killStreakTimer.put(p, 0);
-			killStreakMultiplier.put(p, 0);
-			killsSinceLastDeath.put(p, 0);
-			
-			/**
 			 *  Show scoreboard.
 			 */
 			if( gameMode.equals("teams") )
@@ -2092,17 +1864,11 @@ public class PVP extends JavaPlugin implements Listener{
 		}
 		
 		/**
-		 *  Spawn Weapons
-		 *   - Set velocity to zero
-		 *   - Spawn in cobweb
-		 *   - Track Entity at location
-		 *      -- Reset time lived
-		 *      -- Respawn timer when picked up
+		 *  Start Weapon Spawning
 		 */ 
 		for( Weapon w : weapons )
 		{
-			w.getWeaponLocation().getBlock().setType(Material.WEB);
-			Bukkit.getWorld("World").dropItem(w.getWeaponLocation(), w.getWeaponItemStack()).setVelocity(new Vector());
+			w.processWeapon();
 		}
 	}
 }
