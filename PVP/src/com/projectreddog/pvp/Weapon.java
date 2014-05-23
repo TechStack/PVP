@@ -31,8 +31,8 @@ public class Weapon {
 			weaponItemStack = new ItemStack(weaponMaterial, amount);
 		}
 		
-		ItemMeta itemMeta = null;
-		//ItemMeta itemMeta = weaponItemStack.getItemMeta();
+		//ItemMeta itemMeta = null;
+		ItemMeta itemMeta = weaponItemStack.getItemMeta();
 		itemMeta.setDisplayName(name);
 		weaponItemStack.setItemMeta(itemMeta);
 	}

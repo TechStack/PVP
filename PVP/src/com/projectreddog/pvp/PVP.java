@@ -190,6 +190,8 @@ public class PVP extends JavaPlugin implements Listener{
 		 */
 		GameState = GameStates.Lobby;
 		playerTeam = new HashMap<String, String>();
+		killStreakTimer = new HashMap<Player, Integer>();
+		killStreakMultiplier = new HashMap<Player, Integer>();
 
 		getServer().getPluginManager().registerEvents(this, this);
 		logger = this.getLogger();
@@ -1778,7 +1780,7 @@ public class PVP extends JavaPlugin implements Listener{
 			 */
 			for( Weapon w : weapons )
 			{
-				showVisual(w.getWeaponLocation(), "weapon", null);
+				showVisual(w.getWeaponLocation(), "weapon", "none");
 				
 				/**
 				 *  If respawn timer has a value > 0.
