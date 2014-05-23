@@ -104,48 +104,93 @@ Team4:
       G: 255
       B: 0
   ChatColor: YELLOW
-NumSpawnPoints: 3
+NumSpawnPoints: 12
 RespawnPoint1:
-  X: 135
-  Y: 44
-  Z: 280
-  Yaw: 43
+  X: 190
+  Y: 29
+  Z: 313
+  Yaw: -39
 RespawnPoint2:
-  X: 160
-  Y: 48
-  Z: 293
-  Yaw: 48
-RespawnPoint3:
-  X: 178
+  X: 173
   Y: 38
-  Z: 312
-  Yaw: -151
+  Z: 316
+  Yaw: 180
+RespawnPoint3:
+  X: 136
+  Y: 29
+  Z: 340
+  Yaw: 51
+RespawnPoint4:
+  X: 132
+  Y: 38
+  Z: 325
+  Yaw: 224
+RespawnPoint5:
+  X: 109
+  Y: 29
+  Z: 291
+  Yaw: 141
+RespawnPoint6:
+  X: 126
+  Y: 38
+  Z: 288
+  Yaw: -4
+RespawnPoint7:
+  X: 163
+  Y: 29
+  Z: 264
+  Yaw: -127
+RespawnPoint8:
+  X: 167
+  Y: 38
+  Z: 279
+  Yaw: 47
+RespawnPoint9:
+  X: 163
+  Y: 48
+  Z: 290
+  Yaw: 47
+RespawnPoint10:
+  X: 164
+  Y: 48
+  Z: 313
+  Yaw: 129
+RespawnPoint11:
+  X: 136
+  Y: 48
+  Z: 314
+  Yaw: 227
+RespawnPoint12:
+  X: 135
+  Y: 48
+  Z: 291
+  Yaw: 310
 NumWeapons: 4
 Weapon1:
-  X: 150
-  Y: 49
-  Z: 302
+  X: 185
+  Y: 34
+  Z: 266
   Name: IRON_SWORD
   Amount: 1
   Damage: 0
-  DisplayName: Pointy!
+  DisplayName: Cold Steel
   NumEnchants: 0
 Weapon2:
-  X: 151
-  Y: 49
-  Z: 302
+  X: 189
+  Y: 33
+  Z: 335
   Name: IRON_AXE
   Amount: 1
   Damage: 0
-  DisplayName: Sharp Lumber
+  DisplayName: Display Axe
   NumEnchants: 1
   Enchant1:
     ID: 16
     Level: 2
 Weapon3:
-  X: 150
-  Y: 49
-  Z: 303
+  X: 114
+  Y: 33
+  Z: 338
   Name: BLAZE_ROD
   Amount: 1
   Damage: 0
@@ -155,9 +200,9 @@ Weapon3:
     ID: 20
     Level: 2    
 Weapon4:
-  X: 150
-  Y: 49
-  Z: 303
+  X: 110
+  Y: 33
+  Z: 269
   Name: CLAY_BRICK
   Amount: 1
   Damage: 0
@@ -165,7 +210,7 @@ Weapon4:
   NumEnchants: 2
   Enchant1:
     ID: 19
-    Level: 1
+    Level: 2
   Enchant2:
     ID: 16
     Level: 1        
