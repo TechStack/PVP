@@ -1719,19 +1719,16 @@ public class PVP extends JavaPlugin implements Listener{
 		else
 			showEffectLess = null;
 		
-		for (Player p : Bukkit.getOnlinePlayers())
+		if( visualPointTick2 >= VISUAL_POINT_TICK_LIMIT2 && showEffectLess != null )
 		{
-			if( visualPointTick2 >= VISUAL_POINT_TICK_LIMIT2 && showEffectLess != null )
-			{
-				p.playEffect(tempLocation, showEffectLess, null);
-			}
-			
-			if( visualPointTick >= VISUAL_POINT_TICK_LIMIT && showEffectMore != null )
-			{
-				p.playEffect(tempLocation, showEffectMore, 4);
-				tempLocation.add(0, 1, 0);
-				p.playEffect(tempLocation, showEffectMore, 4);
-			}
+			Bukkit.getWorld("world").playEffect(tempLocation, showEffectLess, null);
+		}
+		
+		if( visualPointTick >= VISUAL_POINT_TICK_LIMIT && showEffectMore != null )
+		{
+			Bukkit.getWorld("world").playEffect(tempLocation, showEffectMore, 4);
+			tempLocation.add(0, 1, 0);
+			Bukkit.getWorld("world").playEffect(tempLocation, showEffectMore, 4);
 		}
 	}
 	
