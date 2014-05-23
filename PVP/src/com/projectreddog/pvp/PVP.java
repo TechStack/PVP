@@ -361,7 +361,7 @@ public class PVP extends JavaPlugin implements Listener{
 		 */
 		if( killStreakTimer.containsKey(victim) ) {
 			victim.setExp(0);
-			killStreakTimer.remove(victim);
+			killStreakTimer.put(victim, 0);
 		}
 		
 		if (e.getEntity() instanceof Player){
@@ -1876,7 +1876,7 @@ public class PVP extends JavaPlugin implements Listener{
 
 					if (killStreakWindow <= 0) {
 						p.setExp(0);
-						killStreakTimer.remove(p);
+						killStreakTimer.put(p, 0);
 						killStreakMultiplier.put(p, 0);
 					} else {
 						float percentRemaining = (float) killStreakWindow / (KILL_STREAK_TIME*20);
