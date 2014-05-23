@@ -142,6 +142,7 @@ public class PVP extends JavaPlugin implements Listener{
 	private static final int WEAPON_SPAWN_INTERVAL = 30;
 	private Map<Player, Integer> killStreakTimer;
 	private Map<Player, Integer> killStreakMultiplier;
+	private Map<Player, Integer> killsSinceLastDeath;
 	public int enlightenChance; 
 	private int numSpawnPoints;
 	private int numWeapons;
@@ -193,6 +194,7 @@ public class PVP extends JavaPlugin implements Listener{
 		playerTeam = new HashMap<String, String>();
 		killStreakTimer = new HashMap<Player, Integer>();
 		killStreakMultiplier = new HashMap<Player, Integer>();
+		killsSinceLastDeath = new HashMap<Player, Integer>();
 
 		getServer().getPluginManager().registerEvents(this, this);
 		logger = this.getLogger();
@@ -365,6 +367,7 @@ public class PVP extends JavaPlugin implements Listener{
 			if( killStreakTimer.containsKey(victim) ) {
 				victim.setExp(0);
 				killStreakTimer.put(victim, 0);
+				killsSinceLastDeath.put(victim, 0);
 			}
 			
 			if (e.getEntity() instanceof Player){
@@ -381,6 +384,10 @@ public class PVP extends JavaPlugin implements Listener{
 					enlighten(killer);
 					
 					updateScore(killer, 1);
+					
+					int runningKills = killsSinceLastDeath.get(killer);
+					killsSinceLastDeath.put(killer, runningKills++);
+					
 					
 					/**
 					 *  Check Kill Streak
@@ -428,12 +435,53 @@ public class PVP extends JavaPlugin implements Listener{
 							streakName = "Killionaire!";
 							break;
 						}
-						((Player)killer).sendMessage(streakName);
 						
-						Bukkit.broadcastMessage(killer.getName() + " - " + streakName);  //  Debug
+						if( multiplier < 10 )
+							((Player)killer).sendMessage(streakName);
+						else
+							((Player)killer).sendMessage(multiplier + "x Kill Streak!");
 					}
 					else
 						killStreakMultiplier.put(killer, 1);
+					
+					/**
+					 *  Check Kills Since Last Death
+					 */
+					if( runningKills >= 5 )
+					{
+						String spreeName = "";
+						switch( runningKills ) {
+						case 5:
+							spreeName = "Killing Spree!";
+							break;
+						case 10:
+							spreeName = "Killing Frenzy!";
+							break;
+						case 15:
+							spreeName = "Running Riot!";
+							break;
+						case 20:
+							spreeName = "Rampage!";
+							break;
+						case 25:
+							spreeName = "Untouchable!";
+							break;
+						case 30:
+							spreeName = "Invincible!";
+							break;
+						}
+						
+						if( runningKills <= 30 )
+						{
+							((Player)killer).sendMessage(spreeName);
+							Bukkit.broadcastMessage(killer.getName() + " - " + spreeName);
+						}
+						else if( runningKills > 30 )
+						{
+							if( runningKills % 5 == 0 )
+								((Player)killer).sendMessage(runningKills + " Kill Spree!");
+						}
+					}
 					
 					/**
 					 *  Allow # seconds to continue kill streak.
@@ -609,6 +657,7 @@ public class PVP extends JavaPlugin implements Listener{
 				
 				killStreakTimer.put(e.getPlayer(), 0);
 				killStreakMultiplier.put(e.getPlayer(), 0);
+				killsSinceLastDeath.put(e.getPlayer(), 0);
 				
 				/**
 				 *  Show scoreboard.
@@ -1352,8 +1401,9 @@ public class PVP extends JavaPlugin implements Listener{
 		/**
 		 *  Choose a Spawn Point at random.
 		 */
+		int attempts = 0;
 		Boolean pointNotFound = true;
-		Location tempPoint = spawnPoints[0];
+		Location tempPoint = spawnPoints[randInt(0, numSpawnPoints-1)];
 		
 		/**
 		 *  Get a possible spawn point.
@@ -1364,7 +1414,7 @@ public class PVP extends JavaPlugin implements Listener{
 		 *  Safe spawn point found, spawn player.
 		 */
 		
-		while( pointNotFound )
+		while( pointNotFound && attempts < 15 )
 		{
 			tempPoint = spawnPoints[randInt(0, numSpawnPoints-1)];
 			
@@ -1389,6 +1439,8 @@ public class PVP extends JavaPlugin implements Listener{
 			    	 */
 			    }
 			}
+			
+			attempts++;
 		}
 		p.teleport( tempPoint );
 	}
@@ -2021,6 +2073,7 @@ public class PVP extends JavaPlugin implements Listener{
 			 */
 			killStreakTimer.put(p, 0);
 			killStreakMultiplier.put(p, 0);
+			killsSinceLastDeath.put(p, 0);
 			
 			/**
 			 *  Show scoreboard.
