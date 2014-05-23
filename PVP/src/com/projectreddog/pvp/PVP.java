@@ -397,15 +397,33 @@ public class PVP extends JavaPlugin implements Listener{
 					 */
 					String streakName = "";
 					switch( multiplier ) {
-					case 2: streakName = "Double Kill!";
-					case 3: streakName = "Triple Kill!";
-					case 4: streakName = "Overkill!";
-					case 5: streakName = "Killtacular!";
-					case 6: streakName = "Killtrocity!";
-					case 7: streakName = "Killimanjaro!";
-					case 8: streakName = "Killtastrophe!";
-					case 9: streakName = "Killpocalypse!";
-					case 10: streakName = "Killionaire!";
+					case 2:
+						streakName = "Double Kill!";
+						break;
+					case 3:
+						streakName = "Triple Kill!";
+						break;
+					case 4:
+						streakName = "Overkill!";
+						break;
+					case 5:
+						streakName = "Killtacular!";
+						break;
+					case 6:
+						streakName = "Killtrocity!";
+						break;
+					case 7:
+						streakName = "Killimanjaro!";
+						break;
+					case 8:
+						streakName = "Killtastrophe!";
+						break;
+					case 9:
+						streakName = "Killpocalypse!";
+						break;
+					case 10:
+						streakName = "Killionaire!";
+						break;
 					}
 					((Player)killer).sendMessage(streakName);
 					
