@@ -147,6 +147,7 @@ public class PVP extends JavaPlugin implements Listener{
 	private Player leadingPlayer;
 	private Team leadingTeam;
 	private Statistics gameStats;
+	private Enlightener enlightener;
 	
 	/**
 	 *  Team Variables
@@ -369,7 +370,7 @@ public class PVP extends JavaPlugin implements Listener{
 				 *  Also, increment scoreboard (Kills).
 				 */
 				
-				enlighten(killer);
+				enlightener.enlighten(killer, (enlightenChance + 5*gameStats.getMultiplier(killer)));
 				
 				updateScore(killer, 1);
 			}
@@ -1093,63 +1094,6 @@ public class PVP extends JavaPlugin implements Listener{
 		return chatcolor + displayName+ ":";
 	}
 	
-	public void enlighten(Player p){
-		// this method will enchant a players weapon (sword or bow) 
-		if (willEnlighten(p)){
-			Enchantment tmpHoldEnchantment = getEchantmentByWeaponType(p.getItemInHand().getType());
-			if( tmpHoldEnchantment != null){			
-				addEnchantLevel(tmpHoldEnchantment,p,5);
-			}
-		}
-	}
-	
-	public boolean willEnlighten(Player p){
-		// get a random number between 0 and 100
-		double tmp =Math.random()*100;
-		// if the number is less than the enlighten chance then we return true ( should enlighten)
-		if( tmp <= (enlightenChance + 5*gameStats.getMultiplier(p)) ){
-			return true;
-		}else 
-		{
-			return false;
-		}
-	}
-	
-	public Enchantment getEchantmentByWeaponType(Material m){
-		// Will need updated if we add other weapons to the mix 
-		switch (m) {
-		case STONE_SWORD:
-			return Enchantment.DAMAGE_ALL;
-		case IRON_SWORD:
-			return Enchantment.DAMAGE_ALL;
-		case GOLD_SWORD:
-			return Enchantment.DAMAGE_ALL;
-		case DIAMOND_SWORD:
-			return Enchantment.DAMAGE_ALL;
-		case BOW:
-			return Enchantment.ARROW_DAMAGE;
-		default:
-			return null;
-		}
-	}
-	
-	public void addEnchantLevel(Enchantment e, Player p, int maxlevel){
-		int currLevel;
-		currLevel= p.getItemInHand().getEnchantmentLevel(e);
-		if (currLevel< maxlevel){
-			//player is under max level safe to enchant.
-			try {
-				p.getItemInHand().addEnchantment(e, currLevel+1);
-				p.playSound(p.getLocation(), Sound.ANVIL_USE, 1, 1);
-				p.sendMessage("Your skill as a warrior has been proven. You have been granted a higher enchantment!");
-			}
-			finally {
-				// do nothing if an error only put try catch in to prevent errors in case user switches to another weapon in the time
-				//between picking the enchant type till the enchantment is added or if somehow the player killed 2 players close together 
-			}
-		}
-	}
-	
 	public void updateScore(Player updatePlayer, int scoreChange) {
 		/**
 		 *  Add scoreChange to Player's Score
@@ -1798,8 +1742,7 @@ public class PVP extends JavaPlugin implements Listener{
 		Bukkit.getServer().getWorld("World").playSound(lobbySpawn,  Sound.BAT_DEATH, 100, 1);
 		
 		gameStats = new Statistics();
-		
-		gameModeSetup();
+		enlightener = new Enlightener();
 		
 		if( gameMode.equals("teams") )
 		{
