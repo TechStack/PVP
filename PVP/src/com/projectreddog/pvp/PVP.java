@@ -354,113 +354,116 @@ public class PVP extends JavaPlugin implements Listener{
 	@EventHandler
 	public void onDeath(PlayerDeathEvent e) {  //  TODO Track Player Deaths for end-game statistic?
 		
-		Player victim = e.getEntity();
+		if (GameState == GameStates.Running){
 		
-		/**
-		 *  Remove them from the Kill Streak Timer, if they're on it.
-		 */
-		if( killStreakTimer.containsKey(victim) ) {
-			victim.setExp(0);
-			killStreakTimer.put(victim, 0);
-		}
-		
-		if (e.getEntity() instanceof Player){
+			Player victim = e.getEntity();
 			
-			Player killer = e.getEntity().getKiller();
+			/**
+			 *  Remove them from the Kill Streak Timer, if they're on it.
+			 */
+			if( killStreakTimer.containsKey(victim) ) {
+				victim.setExp(0);
+				killStreakTimer.put(victim, 0);
+			}
 			
-			if (killer instanceof Player){
-				/**
-				 *  A player killed another player.  Allow chance to enlighten the killer.
-				 *  
-				 *  Also, increment scoreboard (Kills).
-				 */
+			if (e.getEntity() instanceof Player){
 				
-				enlighten(killer);
+				Player killer = e.getEntity().getKiller();
 				
-				updateScore(killer, 1);
-				
-				/**
-				 *  Check Kill Streak
-				 */
-				int streakTime = killStreakTimer.get(killer);
-				
-				if( streakTime > 0 )
-				{
+				if (killer instanceof Player){
 					/**
-					 *  Already on Killing Streak; increase enlightenment chance or give effect?
+					 *  A player killed another player.  Allow chance to enlighten the killer.
+					 *  
+					 *  Also, increment scoreboard (Kills).
 					 */
-					int multiplier = killStreakMultiplier.get(killer) + 1;
-					killStreakMultiplier.put(killer, multiplier);
+					
+					enlighten(killer);
+					
+					updateScore(killer, 1);
 					
 					/**
-					 *  TODO Count kills since last respawn.  Killing Spree, Killing Frenzy, etc.
+					 *  Check Kill Streak
 					 */
-					String streakName = "";
-					switch( multiplier ) {
-					case 2:
-						streakName = "Double Kill!";
-						break;
-					case 3:
-						streakName = "Triple Kill!";
-						break;
-					case 4:
-						streakName = "Overkill!";
-						break;
-					case 5:
-						streakName = "Killtacular!";
-						break;
-					case 6:
-						streakName = "Killtrocity!";
-						break;
-					case 7:
-						streakName = "Killimanjaro!";
-						break;
-					case 8:
-						streakName = "Killtastrophe!";
-						break;
-					case 9:
-						streakName = "Killpocalypse!";
-						break;
-					case 10:
-						streakName = "Killionaire!";
-						break;
+					int streakTime = killStreakTimer.get(killer);
+					
+					if( streakTime > 0 )
+					{
+						/**
+						 *  Already on Killing Streak; increase enlightenment chance or give effect?
+						 */
+						int multiplier = killStreakMultiplier.get(killer) + 1;
+						killStreakMultiplier.put(killer, multiplier);
+						
+						/**
+						 *  TODO Count kills since last respawn.  Killing Spree, Killing Frenzy, etc.
+						 */
+						String streakName = "";
+						switch( multiplier ) {
+						case 2:
+							streakName = "Double Kill!";
+							break;
+						case 3:
+							streakName = "Triple Kill!";
+							break;
+						case 4:
+							streakName = "Overkill!";
+							break;
+						case 5:
+							streakName = "Killtacular!";
+							break;
+						case 6:
+							streakName = "Killtrocity!";
+							break;
+						case 7:
+							streakName = "Killimanjaro!";
+							break;
+						case 8:
+							streakName = "Killtastrophe!";
+							break;
+						case 9:
+							streakName = "Killpocalypse!";
+							break;
+						case 10:
+							streakName = "Killionaire!";
+							break;
+						}
+						((Player)killer).sendMessage(streakName);
+						
+						Bukkit.broadcastMessage(killer.getName() + " - " + streakName);  //  Debug
 					}
-					((Player)killer).sendMessage(streakName);
+					else
+						killStreakMultiplier.put(killer, 1);
 					
-					Bukkit.broadcastMessage(killer.getName() + " - " + streakName);  //  Debug
+					/**
+					 *  Allow # seconds to continue kill streak.
+					 */
+					killStreakTimer.put(killer, KILL_STREAK_TIME*20);
 				}
 				else
-					killStreakMultiplier.put(killer, 1);
-				
-				/**
-				 *  Allow # seconds to continue kill streak.
-				 */
-				killStreakTimer.put(killer, KILL_STREAK_TIME*20);
+				{
+					/**
+					 *  Decrement Score for this Player
+					 *   - Death Reason: Suicide or non-Player Killer
+					 *   TODO Make Decrement for Suicide Only
+					 *   - Does this need special handling for teams?
+					 */
+					
+					updateScore(victim, -1);
+					
+				}
 			}
-			else
-			{
-				/**
-				 *  Decrement Score for this Player
-				 *   - Death Reason: Suicide or non-Player Killer
-				 *   TODO Make Decrement for Suicide Only
-				 *   - Does this need special handling for teams?
-				 */
-				
-				updateScore(victim, -1);
-				
-			}
-		}
-		
-		ArrayList<ItemStack>is =new ArrayList<ItemStack>();
+			
+			ArrayList<ItemStack>is =new ArrayList<ItemStack>();
 
-		for (ItemStack drop : e.getDrops())
-		{
-			if (drop.getType() != Material.COBBLESTONE)
+			for (ItemStack drop : e.getDrops())
 			{
-				is.add(drop);
+				if (drop.getType() != Material.COBBLESTONE)
+				{
+					is.add(drop);
+				}
 			}
+			e.getDrops().removeAll( is);
 		}
-		e.getDrops().removeAll( is);
 	}
 
 	@EventHandler
