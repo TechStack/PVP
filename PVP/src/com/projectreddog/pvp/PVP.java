@@ -42,6 +42,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.enchantments.EnchantmentWrapper;
+import org.bukkit.entity.Arrow;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
@@ -1351,22 +1352,41 @@ public class PVP extends JavaPlugin implements Listener{
 		/**
 		 *  Choose a Spawn Point at random.
 		 */
-		Boolean safePoint = false;
+		Boolean pointNotFound = true;
 		Location tempPoint = spawnPoints[0];
-		double radius = 5D;
 		
-		while( !safePoint )
+		/**
+		 *  Get a possible spawn point.
+		 *  Get all nearby entities.
+		 *  Assume it is a safe place to spawn.
+		 *  If any of the entities is a Player, stop and get another possible spawn point.
+		 *  If none of the entities are players, do nothing.
+		 *  Safe spawn point found, spawn player.
+		 */
+		
+		while( pointNotFound )
 		{
 			tempPoint = spawnPoints[randInt(0, numSpawnPoints-1)];
 			
-			List<Entity> nearbyEntities = tempPoint.getWorld().getEntities();
+			Arrow tempArrow = Bukkit.getWorld("world").spawnArrow(tempPoint, new Vector(), 0, 0);
+			List<Entity> nearbyEntities = tempArrow.getNearbyEntities(5, 5, 5);
+			tempArrow.remove();  //  Does this need to wait until after using nearbyEntities?
+			
+			pointNotFound = false;
+			
 			for(Entity e : nearbyEntities) {
 			    if( e instanceof Player )
 			    {
-			    	if(e.getLocation().distance(tempPoint) <= radius)
-			    		safePoint = false;
-			    	else
-			    		safePoint = true;
+			    	/**
+			    	 *  Point not safe, keep searching.
+			    	 */
+			    	pointNotFound = true;
+			    }
+			    else
+			    {
+			    	/**
+			    	 *  Point is safe; no players nearby.
+			    	 */
 			    }
 			}
 		}
@@ -1797,6 +1817,7 @@ public class PVP extends JavaPlugin implements Listener{
 			
 			/**
 			 *  Show visuals at weapons and bonus effect locations
+			 *  Process weapon entity if it doesn't have a respawn timer value.
 			 */
 			for( Weapon w : weapons )
 			{
@@ -1830,27 +1851,25 @@ public class PVP extends JavaPlugin implements Listener{
 					 *   - Set velocity to 0 (or slightly positive in Vertical)
 					 *   - Set location to weaponLocation
 					 */
-					double radius = 2D;
+					Arrow tempArrow = Bukkit.getWorld("world").spawnArrow(w.getWeaponLocation(), new Vector(), 0, 0);
+					List<Entity> nearbyEntities = tempArrow.getNearbyEntities(2, 2, 2);
+					tempArrow.remove();  //  Does this need to wait until after using nearbyEntities?
 					
-					List<Entity> nearbyEntities = w.getWeaponLocation().getWorld().getEntities();
 					for(Entity e : nearbyEntities) {
 					    if( e instanceof ItemStack )
 					    {
-					    	if(e.getLocation().distance(w.getWeaponLocation()) <= radius)
-					    	{
-					    		if( ((ItemStack)e).hasItemMeta())
-					    		{
-					    			if( ((ItemStack) e).getItemMeta().hasDisplayName() )
-					    			{
-					    				if( ((ItemStack) e).getItemMeta().getDisplayName().equals(w.getWeaponItemStack().getItemMeta().getDisplayName()) )
-					    				{
-					    					e.setTicksLived(0);
-					    					e.setVelocity(new Vector());
-					    					//e.setLocation();  //  TODO  No method to set ItemStack Location ????
-					    				}
-					    			}
-					    		}
-					    	}
+					    	if( ((ItemStack)e).hasItemMeta())
+				    		{
+				    			if( ((ItemStack) e).getItemMeta().hasDisplayName() )
+				    			{
+				    				if( ((ItemStack) e).getItemMeta().getDisplayName().equals(w.getWeaponItemStack().getItemMeta().getDisplayName()) )
+				    				{
+				    					e.setTicksLived(0);
+				    					e.setVelocity(new Vector());
+				    					e.teleport(w.getWeaponLocation());  //  Check if this causes a visual glitchy effect
+				    				}
+				    			}
+				    		}
 					    }
 					}
 				}
