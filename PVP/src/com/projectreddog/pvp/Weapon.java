@@ -118,7 +118,6 @@ public class Weapon {
 			Boolean weaponFound = false;
 			Arrow tempArrow = Bukkit.getWorld("world").spawnArrow(weaponLocation, new Vector(), 0, 0);
 			List<Entity> nearbyEntities = tempArrow.getNearbyEntities(2, 2, 2);
-			tempArrow.remove();  //  Does this need to wait until after using nearbyEntities?
 			
 			for(Entity e : nearbyEntities) {
 			    if( e instanceof ItemStack )
@@ -142,13 +141,15 @@ public class Weapon {
 			    }
 			}
 			
+			tempArrow.remove();
+			
 			if( !weaponFound )
 			{
 				/**
 				 *  Weapon was not found within 2 blocks of location.
 				 *   - Treat it as if it were picked up.
 				 */
-				pickedUp();
+				//pickedUp();
 			}
 		}
 	}

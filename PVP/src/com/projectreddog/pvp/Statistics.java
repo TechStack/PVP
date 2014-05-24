@@ -1,5 +1,6 @@
 package com.projectreddog.pvp;
 
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -37,6 +38,11 @@ public class Statistics {
 		/**
 		 *  Constructor
 		 */
+		killStreakTimer = new HashMap<Player, Integer>();
+		killStreakMultiplier = new HashMap<Player, Integer>();
+		killsSinceLastDeath = new HashMap<Player, Integer>();
+		playerDeaths = new HashMap<Player, Integer>();
+		
 		for (Player p : Bukkit.getOnlinePlayers())
 		{
 			addPlayer(p);

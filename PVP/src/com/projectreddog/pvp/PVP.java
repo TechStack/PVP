@@ -661,8 +661,13 @@ public class PVP extends JavaPlugin implements Listener{
 		{	
 			if( args.length != 0)
 			{
-				KILLS_TO_WIN_GAME = Integer.parseInt(args[0]);
-				Bukkit.broadcastMessage("Kills to Win Set: " + KILLS_TO_WIN_GAME);
+				if( Integer.parseInt(args[0]) > 0 )
+				{
+					KILLS_TO_WIN_GAME = Integer.parseInt(args[0]);
+					Bukkit.broadcastMessage("Kills to Win Set: " + KILLS_TO_WIN_GAME);
+				}
+				else
+					Bukkit.broadcastMessage("Kills must be greater than zero.");
 			}
 			else
 			{
