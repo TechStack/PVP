@@ -95,8 +95,8 @@ public class Statistics {
 	
 	public void showStats() {
 		Bukkit.broadcastMessage("Most Deaths: " + getMostDeathsPlayer() + " - " + mostDeaths + " deaths.");
-		Bukkit.broadcastMessage("Longest Spree: " + getLongestSpreePlayer() + " - " + longestSpree + " deaths.");
-		Bukkit.broadcastMessage("Highest Multi-kill: " + getHighestMultiKillPlayer() + " - " + highestMultiKill + " deaths.");
+		Bukkit.broadcastMessage("Longest Spree: " + getLongestSpreePlayer() + " - " + longestSpree + " kills.");
+		Bukkit.broadcastMessage("Highest Multi-kill: " + getHighestMultiKillPlayer() + " - " + highestMultiKill + "x");
 	}
 	
 	public void updateStatistics(Player victim, Player killer) {

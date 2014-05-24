@@ -244,28 +244,28 @@ public class Enlightener {
 		
 		if( enchantableSwords.contains(material) )
 		{
-			Enchantment[] possibleEnchants = {Enchantment.DAMAGE_ALL, Enchantment.FIRE_ASPECT, Enchantment.KNOCKBACK};
+			Enchantment[] possibleSwordEnchants = {Enchantment.DAMAGE_ALL, Enchantment.FIRE_ASPECT, Enchantment.KNOCKBACK};
 			
-			returnEnchant = possibleEnchants[randInt(0, possibleEnchants.length)];
+			returnEnchant = possibleSwordEnchants[randInt(0, possibleSwordEnchants.length)];
 		}
 		else if( enchantableAxes.contains(material) )
 		{
-			Enchantment[] possibleEnchants = {Enchantment.DAMAGE_ALL, Enchantment.FIRE_ASPECT, Enchantment.KNOCKBACK};
+			Enchantment[] possibleAxesEnchants = {Enchantment.DAMAGE_ALL, Enchantment.FIRE_ASPECT, Enchantment.KNOCKBACK};
 			
-			returnEnchant = possibleEnchants[randInt(0, possibleEnchants.length)];
+			returnEnchant = possibleAxesEnchants[randInt(0, possibleAxesEnchants.length)];
 		}
 		else if( enchantableArmor.contains(material) )
 		{
-			Enchantment[] possibleEnchants = {Enchantment.PROTECTION_ENVIRONMENTAL, Enchantment.PROTECTION_EXPLOSIONS, Enchantment.PROTECTION_FALL, 
+			Enchantment[] possibleArmorEnchants = {Enchantment.PROTECTION_ENVIRONMENTAL, Enchantment.PROTECTION_EXPLOSIONS, Enchantment.PROTECTION_FALL, 
 					Enchantment.PROTECTION_FIRE, Enchantment.PROTECTION_PROJECTILE};
 			
-			returnEnchant = possibleEnchants[randInt(0, possibleEnchants.length)];
+			returnEnchant = possibleArmorEnchants[randInt(0, possibleArmorEnchants.length)];
 		}
 		else if( material.equals(Material.BOW) )
 		{
-			Enchantment[] possibleEnchants = {Enchantment.ARROW_DAMAGE, Enchantment.ARROW_FIRE, Enchantment.ARROW_KNOCKBACK};
+			Enchantment[] possibleBowEnchants = {Enchantment.ARROW_DAMAGE, Enchantment.ARROW_FIRE, Enchantment.ARROW_KNOCKBACK};
 			
-			returnEnchant = possibleEnchants[randInt(0, possibleEnchants.length)];
+			returnEnchant = possibleBowEnchants[randInt(0, possibleBowEnchants.length)];
 		}
 		
 		return returnEnchant;
