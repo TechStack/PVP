@@ -54,6 +54,7 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerPickupItemEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.server.ServerListPingEvent;
 import org.bukkit.inventory.ItemStack;
@@ -134,6 +135,9 @@ public class PVP extends JavaPlugin implements Listener{
 	/**
 	 *  General Game Variables
 	 */
+	private Boolean pvpDefault = true;
+	private static int autoGameOver = 600;
+	private Boolean minimumPlayerCount = true;
 	private static String ACTIVE_FORCE_FIELD; 
 	private static int SECONDS_TO_END_GAME;
 	private static int KILLS_TO_WIN_GAME;
@@ -368,11 +372,18 @@ public class PVP extends JavaPlugin implements Listener{
 				 *  A player killed another player.  Allow chance to enlighten the killer.
 				 *  
 				 *  Also, increment scoreboard (Kills).
+				 *   - When the Killer is not also the Victim
 				 */
 				
 				enlightener.enlighten(killer, (enlightenChance + 5*gameStats.getMultiplier(killer)));
 				
-				updateScore(killer, 1);
+				if( !killer.getName().equals(victim.getName()) )
+					updateScore(killer, 1);
+				else
+				{
+					killer.sendMessage("This is considered suicide ..."); 
+					updateScore(killer, -1);
+				}
 			}
 			else
 			{
@@ -559,8 +570,31 @@ public class PVP extends JavaPlugin implements Listener{
 				SpawnPlayerInGame(e.getPlayer(), "no");
 			}
 		}
+		
+		Player[] players = Bukkit.getOnlinePlayers();
+		
+		if( players.length >= 2 )
+		{
+			minimumPlayerCount = true;
+			autoGameOver = 600;
+		}
 	}
 
+	@EventHandler
+	public void onPlayerQuit ( PlayerQuitEvent e){
+		Player[] players = Bukkit.getOnlinePlayers();
+		
+		if( players.length <= 1 )
+		{
+			Bukkit.broadcastMessage("Below Minimum Player Count (2).  Game Over in 30 seconds.");
+			
+			if( minimumPlayerCount )
+				autoGameOver = 600;  //  30 seconds
+			
+			minimumPlayerCount = false;
+		}
+	}
+	
 	@EventHandler
 	public void onPlayerRespawn( PlayerRespawnEvent e){
 		if( GameState == GameStates.Running){
@@ -778,6 +812,19 @@ public class PVP extends JavaPlugin implements Listener{
 					Bukkit.broadcastMessage("Error:  No Game Mode");
 				return false;
 			}
+			
+			return true;  // Return true when a command is executed successfully.
+		}
+		
+		/**
+		 *  Toggle PVP Game Defaults
+		 */
+		if(cmd.getName().equalsIgnoreCase("pvpdefault"))
+		{	
+			if( pvpDefault )
+				pvpDefault = false;
+			else
+				pvpDefault = true;
 			
 			return true;  // Return true when a command is executed successfully.
 		}
@@ -1085,7 +1132,7 @@ public class PVP extends JavaPlugin implements Listener{
 			return ChatColor.YELLOW;
 		}
 		else { 
-			getLogger().warning("CHAT COLOR in Config file unsupported TECH GET ON THAT!" + stringColor);
+			getLogger().warning("CHAT COLOR in Config file unsupported." + stringColor);
 			return ChatColor.WHITE;
 		}
 	}
@@ -1677,9 +1724,20 @@ public class PVP extends JavaPlugin implements Listener{
 			gameStats.processKillStreakTimer();
 			
 			/**
+			 *  Minimum Player Count Timer
+			 */
+			if( pvpDefault && !minimumPlayerCount )
+			{
+				autoGameOver -= 10;
+				
+				if( autoGameOver <= 0 )
+					GameState = GameStates.GameOver;
+			}
+			
+			/**
 			 *  Check for Game Over
 			 */
-			if( gameSecondsCount >= SECONDS_TO_END_GAME || leadingKillsScore >= KILLS_TO_WIN_GAME )
+			if( gameSecondsCount >= SECONDS_TO_END_GAME || leadingKillsScore >= KILLS_TO_WIN_GAME || GameState == GameStates.GameOver )
 			{
 				/**
 				 *  Game Over
@@ -1749,14 +1807,16 @@ public class PVP extends JavaPlugin implements Listener{
 		gameStats = new Statistics();
 		enlightener = new Enlightener();
 		
+		Player[] players = Bukkit.getOnlinePlayers();
+		
 		if( gameMode.equals("teams") )
 		{
-			assignPlayersToTeams(Bukkit.getOnlinePlayers());
+			assignPlayersToTeams(players);
 		}
 
 		GameState= GameStates.Running;
 
-		for (Player p : Bukkit.getOnlinePlayers())
+		for (Player p : players)
 		{
 			score = kills.getScore(p);
 			
@@ -1778,7 +1838,7 @@ public class PVP extends JavaPlugin implements Listener{
 			}
 		}
 		
-		for (Player p : Bukkit.getOnlinePlayers())
+		for (Player p : players)
 		{
 			/**
 			 *  Avoid death by falling.
@@ -1817,6 +1877,16 @@ public class PVP extends JavaPlugin implements Listener{
 		for( Weapon w : weapons )
 		{
 			w.processWeapon();
+		}
+		
+		if( players.length <= 1 )
+		{
+			Bukkit.broadcastMessage("Below Minimum Player Count (2).  Game Over in 30 seconds, or type /pvpDefault to continue playing.");
+			
+			if( minimumPlayerCount )
+				autoGameOver = 600;  //  30 seconds
+				
+			minimumPlayerCount = false;
 		}
 	}
 }

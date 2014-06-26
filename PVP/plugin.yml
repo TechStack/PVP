@@ -5,6 +5,9 @@ commands:
    gamestats:
       description: Shows some statistics about the current PVP game.
       usage: /<command>
+   pvpdefault:
+      description: Toggle PVP Default Settings
+      usage: /<command>
    setgamemode:
       description: Sets the Game Mode as Free-for-All or Teams.
       usage: /<command> (freeforall, f, teams, t)
