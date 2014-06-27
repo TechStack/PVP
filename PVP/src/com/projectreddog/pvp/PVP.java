@@ -155,6 +155,12 @@ public class PVP extends JavaPlugin implements Listener{
 	private Enlightener enlightener;
 	
 	/**
+	 *  Weapon Variables
+	 */
+	private static List<BlockRespawner> respawningWeapons;
+	private static Material WEAPON_PICKUP_BLOCK = Material.WEB;
+	
+	/**
 	 *  Test Item Variables
 	 */
 	private Map<Location, Integer> clickableBlocks;
@@ -208,6 +214,7 @@ public class PVP extends JavaPlugin implements Listener{
 		clickableBlocks = new HashMap<Location, Integer>();
 		respawningBlocks = new ConcurrentHashMap<Location, Integer>();
 		effectItems = new CopyOnWriteArrayList<Item>();
+		respawningWeapons = new CopyOnWriteArrayList<BlockRespawner>();
 
 		getServer().getPluginManager().registerEvents(this, this);
 		logger = this.getLogger();
@@ -296,6 +303,9 @@ public class PVP extends JavaPlugin implements Listener{
 		Location weaponLocation;
 		
 		for( int i=1; i <= numWeapons; i++ ) {
+			/**
+			 *  Get Location
+			 */
 			pointX = centerBlockValue(this.getConfig().getDouble("Weapon" + i + ".X"));
 			pointY = this.getConfig().getDouble("Weapon" + i + ".Y");
 			pointZ = centerBlockValue(this.getConfig().getDouble("Weapon" + i + ".Z"));
@@ -337,7 +347,7 @@ public class PVP extends JavaPlugin implements Listener{
 			/**
 			 *  Create Weapon Object
 			 */
-			weapons[i-1] = new Weapon(weaponLocation, material, amount, damage, displayName, spawnInterval);
+			weapons[i-1] = new Weapon(weaponLocation, material, amount, damage, displayName, spawnInterval, WEAPON_PICKUP_BLOCK);
 			
 			/**
 			 *  Enchant Item
@@ -346,6 +356,14 @@ public class PVP extends JavaPlugin implements Listener{
 			ItemStack tempIS = weapons[i-1].getWeaponItemStack();
 			enchantItem(configPrefix, tempIS);
 			weapons[i-1].setWeaponItemStack(tempIS);
+		}
+		
+		/**
+		 *  Spawn Weapon Blocks on Map
+		 */
+		for( Weapon w : weapons )
+		{
+			w.spawnBlock();
 		}
 		
 		
@@ -478,40 +496,6 @@ public class PVP extends JavaPlugin implements Listener{
 	}
 	
 	@EventHandler
-	public void onItemPickup( PlayerPickupItemEvent e ) {
-		Item item = e.getItem();
-		ItemStack itemStack = item.getItemStack();
-		ItemMeta itemMeta;
-		String displayName;
-		
-		if( itemStack.hasItemMeta() )
-		{
-			itemMeta = itemStack.getItemMeta();
-			
-			if( itemMeta.hasDisplayName() )
-			{
-				displayName = itemMeta.getDisplayName();
-				
-				for( Weapon w : weapons )
-				{
-					if(w.getWeaponItemStack().hasItemMeta())
-					{
-						if( displayName.equals(w.getWeaponItemStack().getItemMeta().getDisplayName()) )
-						{
-							/**
-							 *  Weapon was picked up.
-							 *   - Start a respawn timer.
-							 *   - Remove cobweb block from weapon location.
-							 */
-							w.pickedUp();
-						}
-					}
-				}
-			}
-		}
-	}
-	
-	@EventHandler
 	public void onPlayerInteract( PlayerInteractEvent e ) {
 		
 		Player clickingPlayer = e.getPlayer();
@@ -604,6 +588,41 @@ public class PVP extends JavaPlugin implements Listener{
 					 */
 					respawningBlocks.put(clickedBlockLoc, BONUS_BLOCK_RESPAWN_TIME);
 					clickableBlocks.remove(clickedBlockLoc);
+				}
+			}
+			else if( clickedBlock.getType() == WEAPON_PICKUP_BLOCK )
+			{ 
+				for( Weapon w : weapons )
+				{
+					/**
+					 *  Check if this block matches a Weapon Location
+					 */
+					if( clickedBlockLoc == w.getWeaponLocation() )
+					{
+						/**
+						 *  Give the Player the Weapon
+						 *   - Search inventory and upgrade Sword, Bow, etc if possible
+						 */
+						if( w.getWeaponItemStack().getType() == Material.BOW )
+						{
+							w.upgradeWeapon(clickingPlayer, Material.BOW);
+						}
+						else if( w.getWeaponItemStack().getType() == Material.IRON_SWORD )
+						{
+							w.upgradeWeapon(clickingPlayer, Material.STONE_SWORD);
+						}
+						else
+						{
+							clickingPlayer.getInventory().addItem(w.getWeaponItemStack());
+						}
+						
+						/**
+						 *  Remove Block and Add to Respawn Queue
+						 */
+						clickedBlock.setType(Material.AIR);
+						BlockRespawner tempBlockRespawner = new BlockRespawner(w.getWeaponLocation(), w.getRespawnBlockMaterial(), w.getSpawnInterval());
+						respawningWeapons.add(tempBlockRespawner);
+					}
 				}
 			}
 		}
@@ -1751,7 +1770,7 @@ public class PVP extends JavaPlugin implements Listener{
 			timeTickedTimer = 1;
 			gameSecondsCount++;
 			
-			if( gameSecondsCount == (int) SECONDS_TO_END_GAME * 0.8)
+			if( gameSecondsCount == (int) SECONDS_TO_END_GAME * 0.8 && GameState == GameStates.Running)
 			{
 				/**
 				 *  Broadcast message and play sound when game timer nears the End of Game time limit.
@@ -1773,9 +1792,11 @@ public class PVP extends JavaPlugin implements Listener{
 	
 	public void TimeTicked() {
 		/**
-		 *  Runs every 10 ticks.
-		 *    - 20 ticks = 1 second
+		 *  Game Length Timer
+		 *   - TimeTicked() runs every 10 ticks, or 0.5 seconds.
 		 */
+		gameTimer();
+		
 		if (GameState == GameStates.Running){
 
 			/**
@@ -1790,50 +1811,12 @@ public class PVP extends JavaPlugin implements Listener{
 			for( Weapon w : weapons )
 			{
 				w.weaponVisual(shortTick, SHORT_TICK_LIMIT, longTick, LONG_TICK_LIMIT);
-				
-				w.processWeapon();
 			}
-			
-			/**
-			 *  Game Length Timer
-			 */
-			gameTimer();
 			
 			/**
 			 *  Process Kill Streak Timer
 			 */
 			gameStats.processKillStreakTimer();
-			
-			/**
-			 *  Check Clickable Blocks List
-			 *   - If it's on the list, but the block at this location is not Emerald, then 
-			 *        somehow the block was broken before the counter reached Zero.
-			 */
-			if( ((int) (gameSecondsCount % 30)) == 0 )
-			{
-				if( !clickableBlocks.isEmpty() )
-				{
-					Iterator<Map.Entry<Location, Integer>> it = clickableBlocks.entrySet().iterator();
-
-					/**
-					 *  Loop through HashMap, decrementing timers.
-					 */
-					while (it.hasNext()) {
-						Map.Entry<Location, Integer> entry = it.next();
-
-						Location location = entry.getKey();
-
-						Block tempBlock = location.getWorld().getBlockAt(location);
-						
-						if( tempBlock.getType() != Material.EMERALD_BLOCK )
-						{
-							clickableBlocks.remove(location);
-							
-							Bukkit.broadcastMessage("An Emerald Block has broken before its time.  So sad.");
-						}
-					}
-				}
-			}
 			
 			/**
 			 *  Check for Game Over
@@ -1920,7 +1903,7 @@ public class PVP extends JavaPlugin implements Listener{
 				respawnTime -= 10;
 
 				if (respawnTime <= 0) {
-					Block tempBlock = location.getWorld().getBlockAt(location);
+					Block tempBlock = location.getBlock();  //location.getWorld().getBlockAt(location);
 					tempBlock.setType(Material.EMERALD_BLOCK);
 					respawningBlocks.remove(location);
 				} else {
@@ -1945,6 +1928,66 @@ public class PVP extends JavaPlugin implements Listener{
 				if( entryItem.getTicksLived() >= 30 )
 				{
 					entryItem.remove();
+					
+					effectItems.remove(entryItem);
+				}
+			}
+		}
+		
+		/**
+		 *  Check Clickable Blocks List for Loose Ends
+		 *   - If it's on the list, but the block at this location is not Emerald, then 
+		 *        somehow the block was broken before the counter reached Zero.
+		 */
+		if( ((int) (gameSecondsCount % 30)) == 0 )
+		{
+			if( !clickableBlocks.isEmpty() )
+			{
+				Iterator<Map.Entry<Location, Integer>> it = clickableBlocks.entrySet().iterator();
+
+				/**
+				 *  Loop through HashMap, decrementing timers.
+				 */
+				while (it.hasNext()) {
+					Map.Entry<Location, Integer> entry = it.next();
+
+					Location location = entry.getKey();
+
+					Block tempBlock = location.getWorld().getBlockAt(location);
+					
+					if( tempBlock.getType() != Material.EMERALD_BLOCK )
+					{
+						clickableBlocks.remove(location);
+						
+						Bukkit.broadcastMessage("An Emerald Block has broken before its time.  So sad.");
+					}
+				}
+			}
+		}
+		
+		/**
+		 *  Process Weapon Respawning
+		 */
+		if( respawningWeapons.size() > 0 )
+		{
+			Iterator<BlockRespawner> it = respawningWeapons.iterator();
+			
+			/**
+			 *  Loop through List, checking Remaining Respawn Time.
+			 */
+			while (it.hasNext()) {
+				BlockRespawner entryBlockRespawner = it.next();
+
+				int remainingTime = entryBlockRespawner.processTimer();
+				
+				if( remainingTime <= 0 )
+				{
+					/**
+					 *  Spawn Block and remove entry from Main List
+					 */
+					entryBlockRespawner.spawnBlock();
+					
+					respawningWeapons.remove(entryBlockRespawner);
 				}
 			}
 		}
@@ -2022,11 +2065,13 @@ public class PVP extends JavaPlugin implements Listener{
 		}
 		
 		/**
-		 *  Start Weapon Spawning
-		 */ 
+		 *  Spawn Weapon Blocks on Map and Clear Respawn Queue
+		 */
 		for( Weapon w : weapons )
 		{
-			w.processWeapon();
+			w.spawnBlock();
 		}
+		
+		respawningWeapons.clear();
 	}
 }

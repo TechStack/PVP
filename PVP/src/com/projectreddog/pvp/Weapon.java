@@ -8,7 +8,9 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.util.Vector;
 
@@ -26,16 +28,16 @@ public class Weapon {
 	private Material weaponMaterial;
 	private int amount, damage;
 	private ItemStack weaponItemStack;
-	private int respawnTimeRemaining;
 	private int spawnInterval;
+	private Material pickupBlockMaterial;
 	
-	public Weapon(Location location, Material material, int amt, int dmg, String name, int spwnIntvl) {
+	public Weapon(Location location, Material material, int amt, int dmg, String name, int spwnIntvl, Material blockMaterial) {
 		this.weaponLocation = location;
 		this.weaponMaterial = material;
 		this.amount = amt;
 		this.damage = dmg;
-		this.respawnTimeRemaining = spwnIntvl;
 		this.spawnInterval = spwnIntvl;
+		this.pickupBlockMaterial = blockMaterial;
 		
 		if(damage != 0)
 		{		
@@ -64,9 +66,12 @@ public class Weapon {
 		return weaponItemStack;
 	}
 	
-	public void pickedUp() {
-		respawnTimeRemaining = spawnInterval*20;
-		weaponLocation.getBlock().setType(Material.AIR);
+	public int getSpawnInterval() {
+		return ((int) (spawnInterval*20));
+	}
+	
+	public Material getRespawnBlockMaterial() {
+		return pickupBlockMaterial;
 	}
 	
 	public void weaponVisual(int shortTick, int shortLimit, int longTick, int longLimit) {
@@ -87,70 +92,25 @@ public class Weapon {
 			Bukkit.getWorld("world").playEffect(tempLocation, Effect.SMOKE, 4);
 		}
 	}
-	
-	public void processWeapon() {
-		/**
-		 *  If respawn timer has a value > 0.
-		 *   - Decrement Weapon Respawn timer.
-		 *   - Flag that it needs respawned.
-		 */
-		if( respawnTimeRemaining > 0 )
+
+	public void spawnBlock() 
+	{
+		weaponLocation.getBlock().setType(pickupBlockMaterial);
+	}
+
+	public void upgradeWeapon(Player player, Material materialToBeReplaced) {
+		
+		PlayerInventory playerInventory = player.getInventory();
+		
+		if( playerInventory.contains(materialToBeReplaced) )
 		{
-			respawnTimeRemaining -= 10;
+			playerInventory.remove(new ItemStack(materialToBeReplaced));
 			
-			/**
-			 *  If respawn timer gets to 0, respawn weapon in cobweb.
-			 */
-			if( respawnTimeRemaining <= 0 )
-			{
-				weaponLocation.getBlock().setType(Material.WEB);
-				Bukkit.getWorld("World").dropItem(weaponLocation, weaponItemStack).setVelocity(new Vector());
-			}
+			playerInventory.addItem(weaponItemStack);
 		}
 		else
 		{
-			/**
-			 *  Get entities near weapon location.  Check if entity is the weapon.
-			 *   - Set time lived to 0 to prevent de-spawning.
-			 *   - Set velocity to 0 (or slightly positive in Vertical)
-			 *   - Set location to weaponLocation
-			 */
-			Boolean weaponFound = false;
-			Arrow tempArrow = Bukkit.getWorld("world").spawnArrow(weaponLocation, new Vector(), 0, 0);
-			List<Entity> nearbyEntities = tempArrow.getNearbyEntities(2, 2, 2);
-			
-			for(Entity e : nearbyEntities) {
-			    if( e instanceof ItemStack )
-			    {
-			    	if( ((ItemStack)e).hasItemMeta())
-		    		{
-		    			if( ((ItemStack) e).getItemMeta().hasDisplayName() )
-		    			{
-		    				if( ((ItemStack) e).getItemMeta().getDisplayName().equals(weaponItemStack.getItemMeta().getDisplayName()) )
-		    				{
-		    					/**
-		    					 *  Weapon was found.  Reset life time, velocity, and position.
-		    					 */
-		    					weaponFound = true;
-		    					e.setTicksLived(0);
-		    					e.setVelocity(new Vector());
-		    					e.teleport(weaponLocation);  //  Check if this causes a visual glitchy effect
-		    				}
-		    			}
-		    		}
-			    }
-			}
-			
-			tempArrow.remove();
-			
-			if( !weaponFound )
-			{
-				/**
-				 *  Weapon was not found within 2 blocks of location.
-				 *   - Treat it as if it were picked up.
-				 */
-				//pickedUp();
-			}
+			player.getInventory().addItem(weaponItemStack);
 		}
 	}
 	
