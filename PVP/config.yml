@@ -12,6 +12,7 @@ BonusBlockRespawnTime: 600
 MaxBonusBlockClicks: 9
 NumEmeralsForPoint: 32
 BonusEmeraldMaterial: EMERALD_BLOCK
+WeaponPickupBlockMaterial: DRAGON_EGG
 LobbySawn:
   X: 150
   Y: 113

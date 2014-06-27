@@ -158,7 +158,7 @@ public class PVP extends JavaPlugin implements Listener{
 	 *  Weapon Variables
 	 */
 	private static List<BlockRespawner> respawningWeapons;
-	private static Material WEAPON_PICKUP_BLOCK = Material.WEB;
+	private static Material WEAPON_PICKUP_BLOCK;
 	
 	/**
 	 *  Test Item Variables
@@ -252,6 +252,7 @@ public class PVP extends JavaPlugin implements Listener{
 		MAX_BONUS_BLOCK_CLICKS = this.getConfig().getInt("MaxBonusBlockClicks");
 		NUM_EMERALDS_FOR_POINT = this.getConfig().getInt("NumEmeralsForPoint");
 		BONUS_MATERIAL = Material.getMaterial(this.getConfig().getString("BonusEmeraldMaterial"));
+		WEAPON_PICKUP_BLOCK = Material.getMaterial(this.getConfig().getString("WeaponPickupBlockMaterial"));
 		
 		
 		/**
