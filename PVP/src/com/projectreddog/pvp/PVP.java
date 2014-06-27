@@ -51,6 +51,7 @@ import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
@@ -499,131 +500,134 @@ public class PVP extends JavaPlugin implements Listener{
 	@EventHandler
 	public void onPlayerInteract( PlayerInteractEvent e ) {
 		
-		Player clickingPlayer = e.getPlayer();
-		Block clickedBlock = e.getClickedBlock();
-		if( clickedBlock != null )
+		if ( e.getAction()==Action.LEFT_CLICK_BLOCK)
 		{
-			Location clickedBlockLoc = clickedBlock.getLocation();
-			
-			if( clickedBlock.getType() == BONUS_MATERIAL )
+			Player clickingPlayer = e.getPlayer();
+			Block clickedBlock = e.getClickedBlock();
+			if( clickedBlock != null )
 			{
-				/**
-				 *  Check if this block is in the list according to its Location.
-				 */
-				if( clickableBlocks.containsKey(clickedBlockLoc) )
+				Location clickedBlockLoc = clickedBlock.getLocation();
+				
+				if( clickedBlock.getType() == BONUS_MATERIAL )
 				{
 					/**
-					 *  If Block location is already in the HashMap
-					 *   - Decrease the Counter
+					 *  Check if this block is in the list according to its Location.
 					 */
-					int clickCounter = clickableBlocks.get(clickedBlockLoc);
-					//Bukkit.broadcastMessage("Block Counter: " + clickCounter + " going on " + (--clickCounter));
-					clickCounter--;
-					clickableBlocks.put(clickedBlockLoc, clickCounter);
-				}
-				else
-				{
-					/**
-					 *  Otherwise:
-					 *   - Add the Location to the HashMap and set the Counter
-					 *   - Counter set to random 0-9
-					 */
-					int allowedClicks = randInt(0, MAX_BONUS_BLOCK_CLICKS);
-					//Bukkit.broadcastMessage("Block Added to HashMap: " + allowedClicks + " allowed Clicks");
-					clickableBlocks.put(clickedBlockLoc, allowedClicks);
-				}	
-				
-				/**
-				 *  Give the Player an Item, even if counter is Zero.
-				 */
-				ItemStack itemStack = new ItemStack(Material.EMERALD);
-				clickingPlayer.getInventory().addItem(itemStack);
-				clickingPlayer.playSound(clickingPlayer.getLocation(), Sound.SUCCESSFUL_HIT, 1, 1);
-				
-				/**
-				 *  Emerald Effect
-				 */
-				Location itemLocation = clickedBlock.getLocation().add(0, 1, 0);
-				Item item = itemLocation.getWorld().dropItemNaturally(itemLocation, itemStack);
-				item.setPickupDelay(100);
-				Vector itemVelocity = item.getVelocity();
-				itemVelocity.add(new Vector(0, 1, 0));
-				item.setVelocity(itemVelocity);
-				effectItems.add(item);
-				
-				/**
-				 *  Check if player has ## Emeralds
-				 */
-				ItemStack emeralds = new ItemStack(Material.EMERALD, NUM_EMERALDS_FOR_POINT);
-				if( clickingPlayer.getInventory().contains(emeralds) )
-				{
-					clickingPlayer.getInventory().removeItem(emeralds);
-					
-					if (GameState == GameStates.Running)
+					if( clickableBlocks.containsKey(clickedBlockLoc) )
 					{
 						/**
-						 *  Add a point to player's score, if game is currently running.
+						 *  If Block location is already in the HashMap
+						 *   - Decrease the Counter
 						 */
-						updateScore(clickingPlayer, 1);
-						
-						clickingPlayer.sendMessage("Collected " + NUM_EMERALDS_FOR_POINT + " Emeralds!  Score increased!");
+						int clickCounter = clickableBlocks.get(clickedBlockLoc);
+						//Bukkit.broadcastMessage("Block Counter: " + clickCounter + " going on " + (--clickCounter));
+						clickCounter--;
+						clickableBlocks.put(clickedBlockLoc, clickCounter);
 					}
 					else
 					{
-						clickingPlayer.sendMessage(NUM_EMERALDS_FOR_POINT + " Emeralds are worth 1 Point in game.");
-					}
-				}
-				
-				/**
-				 *  Block Click Count
-				 */
-				if( clickableBlocks.get(clickedBlockLoc) <= 0 )
-				{
-					/**
-					 *  If the counter reaches Zero, set the block to AIR.
-					 */
-					clickedBlock.setType(Material.AIR);
-					//Bukkit.broadcastMessage("Block Clicks Limit Reached.  Should now be AIR.");
-					/**
-					 *  Set another HashMap<Location, Integer> counter to count to respawn the block -> timeTicked().
-					 */
-					respawningBlocks.put(clickedBlockLoc, BONUS_BLOCK_RESPAWN_TIME);  //  TODO  Make this use BlockRespawner?
-					clickableBlocks.remove(clickedBlockLoc);
-				}
-			}
-			else if( clickedBlock.getType() == WEAPON_PICKUP_BLOCK )
-			{ 
-				for( Weapon w : weapons )
-				{
-					/**
-					 *  Check if this block matches a Weapon Location
-					 */
-					if( clickedBlockLoc == w.getWeaponLocation() )
-					{
 						/**
-						 *  Give the Player the Weapon
-						 *   - Search inventory and upgrade Sword, Bow, etc if possible
+						 *  Otherwise:
+						 *   - Add the Location to the HashMap and set the Counter
+						 *   - Counter set to random 0-9
 						 */
-						if( w.getWeaponItemStack().getType() == Material.BOW )
+						int allowedClicks = randInt(0, MAX_BONUS_BLOCK_CLICKS);
+						//Bukkit.broadcastMessage("Block Added to HashMap: " + allowedClicks + " allowed Clicks");
+						clickableBlocks.put(clickedBlockLoc, allowedClicks);
+					}	
+					
+					/**
+					 *  Give the Player an Item, even if counter is Zero.
+					 */
+					ItemStack itemStack = new ItemStack(Material.EMERALD);
+					clickingPlayer.getInventory().addItem(itemStack);
+					clickingPlayer.playSound(clickingPlayer.getLocation(), Sound.SUCCESSFUL_HIT, 1, 1);
+					
+					/**
+					 *  Emerald Effect
+					 */
+					Location itemLocation = clickedBlock.getLocation().add(0, 1, 0);
+					Item item = itemLocation.getWorld().dropItemNaturally(itemLocation, itemStack);
+					item.setPickupDelay(100);
+					Vector itemVelocity = item.getVelocity();
+					itemVelocity.add(new Vector(0, 1, 0));
+					item.setVelocity(itemVelocity);
+					effectItems.add(item);
+					
+					/**
+					 *  Check if player has ## Emeralds
+					 */
+					ItemStack emeralds = new ItemStack(Material.EMERALD, NUM_EMERALDS_FOR_POINT);
+					if( clickingPlayer.getInventory().contains(emeralds) )
+					{
+						clickingPlayer.getInventory().removeItem(emeralds);
+						
+						if (GameState == GameStates.Running)
 						{
-							w.upgradeWeapon(clickingPlayer, Material.BOW);
-						}
-						else if( w.getWeaponItemStack().getType() == Material.IRON_SWORD )
-						{
-							w.upgradeWeapon(clickingPlayer, Material.STONE_SWORD);
+							/**
+							 *  Add a point to player's score, if game is currently running.
+							 */
+							updateScore(clickingPlayer, 1);
+							
+							clickingPlayer.sendMessage("Collected " + NUM_EMERALDS_FOR_POINT + " Emeralds!  Score increased!");
 						}
 						else
 						{
-							clickingPlayer.getInventory().addItem(w.getWeaponItemStack());
+							clickingPlayer.sendMessage(NUM_EMERALDS_FOR_POINT + " Emeralds are worth 1 Point in game.");
 						}
-						
+					}
+					
+					/**
+					 *  Block Click Count
+					 */
+					if( clickableBlocks.get(clickedBlockLoc) <= 0 )
+					{
 						/**
-						 *  Remove Block and Add to Respawn Queue
+						 *  If the counter reaches Zero, set the block to AIR.
 						 */
 						clickedBlock.setType(Material.AIR);
-						clickingPlayer.playSound(clickingPlayer.getLocation(), Sound.CHICKEN_EGG_POP, 1, 1);
-						BlockRespawner tempBlockRespawner = new BlockRespawner(w.getWeaponLocation(), w.getRespawnBlockMaterial(), w.getSpawnInterval());
-						respawningWeapons.add(tempBlockRespawner);
+						//Bukkit.broadcastMessage("Block Clicks Limit Reached.  Should now be AIR.");
+						/**
+						 *  Set another HashMap<Location, Integer> counter to count to respawn the block -> timeTicked().
+						 */
+						respawningBlocks.put(clickedBlockLoc, BONUS_BLOCK_RESPAWN_TIME);  //  TODO  Make this use BlockRespawner?
+						clickableBlocks.remove(clickedBlockLoc);
+					}
+				}
+				else if( clickedBlock.getType() == WEAPON_PICKUP_BLOCK )
+				{ 
+					for( Weapon w : weapons )
+					{
+						/**
+						 *  Check if this block matches a Weapon Location
+						 */
+						if( clickedBlockLoc == w.getWeaponLocation() )
+						{
+							/**
+							 *  Give the Player the Weapon
+							 *   - Search inventory and upgrade Sword, Bow, etc if possible
+							 */
+							if( w.getWeaponItemStack().getType() == Material.BOW )
+							{
+								w.upgradeWeapon(clickingPlayer, Material.BOW);
+							}
+							else if( w.getWeaponItemStack().getType() == Material.IRON_SWORD )
+							{
+								w.upgradeWeapon(clickingPlayer, Material.STONE_SWORD);
+							}
+							else
+							{
+								clickingPlayer.getInventory().addItem(w.getWeaponItemStack());
+							}
+							
+							/**
+							 *  Remove Block and Add to Respawn Queue
+							 */
+							clickedBlock.setType(Material.AIR);
+							clickingPlayer.playSound(clickingPlayer.getLocation(), Sound.CHICKEN_EGG_POP, 1, 1);
+							BlockRespawner tempBlockRespawner = new BlockRespawner(w.getWeaponLocation(), w.getRespawnBlockMaterial(), w.getSpawnInterval());
+							respawningWeapons.add(tempBlockRespawner);
+						}
 					}
 				}
 			}
