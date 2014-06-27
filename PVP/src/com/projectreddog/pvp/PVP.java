@@ -94,7 +94,7 @@ import org.bukkit.util.Vector;
  *    - Power-ups  TODO
  *       -- Add Effects or Enchantments
  *       -- Visual Effect / Collectible
- *    - Weapons on Map (includes Items)  TODO  In Progress...
+ *    - Weapons on Map (includes Items)
  *       -- Customizable via Config
  *           --- Item Abilities
  *           --- Item Locations
@@ -104,7 +104,7 @@ import org.bukkit.util.Vector;
  *       -- Armor Upgrade
  *       -- Effect
  *       -- Enchanting
- *    - Cooldown for all item and special points.  TODO 
+ *    - Cooldown for all item and special points. 
  *    - Scoring
  *       -- Scoreboard
  *       -- Game Over Limits
@@ -586,7 +586,7 @@ public class PVP extends JavaPlugin implements Listener{
 					/**
 					 *  Set another HashMap<Location, Integer> counter to count to respawn the block -> timeTicked().
 					 */
-					respawningBlocks.put(clickedBlockLoc, BONUS_BLOCK_RESPAWN_TIME);
+					respawningBlocks.put(clickedBlockLoc, BONUS_BLOCK_RESPAWN_TIME);  //  TODO  Make this use BlockRespawner?
 					clickableBlocks.remove(clickedBlockLoc);
 				}
 			}
