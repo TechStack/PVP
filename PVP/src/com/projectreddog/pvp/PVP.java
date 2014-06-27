@@ -620,6 +620,7 @@ public class PVP extends JavaPlugin implements Listener{
 						 *  Remove Block and Add to Respawn Queue
 						 */
 						clickedBlock.setType(Material.AIR);
+						clickingPlayer.playSound(clickingPlayer.getLocation(), Sound.CHICKEN_EGG_POP, 1, 1);
 						BlockRespawner tempBlockRespawner = new BlockRespawner(w.getWeaponLocation(), w.getRespawnBlockMaterial(), w.getSpawnInterval());
 						respawningWeapons.add(tempBlockRespawner);
 					}
