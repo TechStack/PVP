@@ -160,7 +160,7 @@ public class PVP extends JavaPlugin implements Listener{
 	 */
 	private Map<Location, Integer> clickableBlocks;
 	private Map<Location, Integer> respawningBlocks;
-	private static final int BLOCK_RESPAWN_TIME = 200;  // 20 Seconds
+	private static final int BLOCK_RESPAWN_TIME = 600;  // 30 Seconds
 	private static final int MAX_BLOCK_CLICKS = 9;
 	
 	/**
@@ -509,52 +509,58 @@ public class PVP extends JavaPlugin implements Listener{
 		
 		Player clickingPlayer = e.getPlayer();
 		Block clickedBlock = e.getClickedBlock();
-		Location clickedBlockLoc = clickedBlock.getLocation();
-		
-		if( clickedBlock.getType() == Material.EMERALD_BLOCK )
+		if( clickedBlock != null )
 		{
-			/**
-			 *  Check if this block is in the list according to its Location.
-			 */
-			if( clickableBlocks.containsKey(clickedBlockLoc) )
-			{
-				/**
-				 *  If Block location is already in the HashMap
-				 *   - Decrease the Counter
-				 */
-				int clickCounter = clickableBlocks.get(clickedBlockLoc);
-				clickableBlocks.put(clickedBlockLoc, clickCounter--);
-			}
-			else
-			{
-				/**
-				 *  Otherwise:
-				 *   - Add the Location to the HashMap and set the Counter
-				 *   - Counter set to random 0-9
-				 */
-				int allowedClicks = randInt(0, MAX_BLOCK_CLICKS);
-				clickableBlocks.put(clickedBlockLoc, allowedClicks);
-			}	
+			Location clickedBlockLoc = clickedBlock.getLocation();
 			
-			/**
-			 *  Give the Player an Item, even if counter is Zero.
-			 */
-			ItemStack itemStack = new ItemStack(Material.EMERALD);
-			clickingPlayer.getInventory().addItem(itemStack);
-			
-			if( clickableBlocks.get(clickedBlockLoc) <= 0 ) // Count = 0
+			if( clickedBlock.getType() == Material.EMERALD_BLOCK )
 			{
 				/**
-				 *  If the counter reaches Zero, set the block to AIR.
+				 *  Check if this block is in the list according to its Location.
 				 */
-				clickedBlock.setType(Material.AIR);
+				if( clickableBlocks.containsKey(clickedBlockLoc) )
+				{
+					/**
+					 *  If Block location is already in the HashMap
+					 *   - Decrease the Counter
+					 */
+					int clickCounter = clickableBlocks.get(clickedBlockLoc);
+					//Bukkit.broadcastMessage("Block Counter: " + clickCounter + " going on " + (--clickCounter));
+					clickCounter--;
+					clickableBlocks.put(clickedBlockLoc, clickCounter);
+				}
+				else
+				{
+					/**
+					 *  Otherwise:
+					 *   - Add the Location to the HashMap and set the Counter
+					 *   - Counter set to random 0-9
+					 */
+					int allowedClicks = randInt(0, MAX_BLOCK_CLICKS);
+					//Bukkit.broadcastMessage("Block Added to HashMap: " + allowedClicks + " allowed Clicks");
+					clickableBlocks.put(clickedBlockLoc, allowedClicks);
+				}	
 				
 				/**
-				 *  Set another HashMap<Location, Integer> counter to count to respawn the block -> timeTicked().
-				 *   - Respawn in 20 seconds.
+				 *  Give the Player an Item, even if counter is Zero.
 				 */
-				respawningBlocks.put(clickedBlockLoc, BLOCK_RESPAWN_TIME);
-				clickableBlocks.remove(clickedBlockLoc);
+				ItemStack itemStack = new ItemStack(Material.EMERALD);
+				clickingPlayer.getInventory().addItem(itemStack);
+				clickingPlayer.playSound(clickingPlayer.getLocation(), Sound.SUCCESSFUL_HIT, 1, 1);
+				
+				if( clickableBlocks.get(clickedBlockLoc) <= 0 ) // Count = 0
+				{
+					/**
+					 *  If the counter reaches Zero, set the block to AIR.
+					 */
+					clickedBlock.setType(Material.AIR);
+					//Bukkit.broadcastMessage("Block Clicks Limit Reached.  Should now be AIR.");
+					/**
+					 *  Set another HashMap<Location, Integer> counter to count to respawn the block -> timeTicked().
+					 */
+					respawningBlocks.put(clickedBlockLoc, BLOCK_RESPAWN_TIME);
+					clickableBlocks.remove(clickedBlockLoc);
+				}
 			}
 		}
 	}
@@ -653,7 +659,7 @@ public class PVP extends JavaPlugin implements Listener{
 		
 		if( players.length <= 1 )
 		{
-			Bukkit.broadcastMessage("Below Minimum Player Count (2).  Game Over in 30 seconds.");
+			Bukkit.broadcastMessage("Below Minimum Player Count (2).  Game Over in 30 seconds, or type /pvpDefault to continue playing.");
 			
 			if( minimumPlayerCount )
 				autoGameOver = 600;  //  30 seconds
@@ -1802,34 +1808,6 @@ public class PVP extends JavaPlugin implements Listener{
 			}
 			
 			/**
-			 *  Clicked Block Respawn Timer
-			 */
-			if( !respawningBlocks.isEmpty() )
-			{
-				Iterator<Map.Entry<Location, Integer>> it = respawningBlocks.entrySet().iterator();
-
-				/**
-				 *  Loop through HashMap, decrementing timers.
-				 */
-				while (it.hasNext()) {
-					Map.Entry<Location, Integer> entry = it.next();
-
-					Location location = entry.getKey();
-
-					int respawnTime = respawningBlocks.get(location);
-					respawnTime -= 10;
-
-					if (respawnTime <= 0) {
-						Block tempBlock = location.getWorld().getBlockAt(location);
-						tempBlock.setType(Material.EMERALD_BLOCK);
-						respawningBlocks.remove(location);
-					} else {
-						respawningBlocks.put(location, respawnTime);
-					}
-				}
-			}
-			
-			/**
 			 *  Check Clickable Blocks List
 			 *   - If it's on the list, but the block at this location is not Emerald, then 
 			 *        somehow the block was broken before the counter reached Zero.
@@ -1922,6 +1900,35 @@ public class PVP extends JavaPlugin implements Listener{
 
 				//  Call command in the MapVote Plugin to start the vote !
 				Bukkit.getServer().dispatchCommand(Bukkit.getConsoleSender(), "startvote");
+			}
+		}
+		
+		/**
+		 *  Clicked Block Respawn Timer
+		 */
+		if( respawningBlocks.size() > 0 )
+		{
+			Iterator<Map.Entry<Location, Integer>> it = respawningBlocks.entrySet().iterator();
+			
+			/**
+			 *  Loop through HashMap, decrementing timers.
+			 */
+			while (it.hasNext()) {
+				Map.Entry<Location, Integer> entry = it.next();
+
+				Location location = entry.getKey();
+
+				int respawnTime = respawningBlocks.get(location);
+				if( ((int) (respawnTime % 5)) == 0 )
+				respawnTime -= 10;
+
+				if (respawnTime <= 0) {
+					Block tempBlock = location.getWorld().getBlockAt(location);
+					tempBlock.setType(Material.EMERALD_BLOCK);
+					respawningBlocks.remove(location);
+				} else {
+					respawningBlocks.put(location, respawnTime);
+				}
 			}
 		}
 	}
