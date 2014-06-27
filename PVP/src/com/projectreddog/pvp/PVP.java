@@ -25,6 +25,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Logger;
 
 import org.bukkit.Bukkit;
@@ -137,9 +139,6 @@ public class PVP extends JavaPlugin implements Listener{
 	/**
 	 *  General Game Variables
 	 */
-	private Boolean pvpDefault = true;
-	private static int autoGameOver = 600;
-	private Boolean minimumPlayerCount = true;
 	private static String ACTIVE_FORCE_FIELD; 
 	private static int SECONDS_TO_END_GAME;
 	private static int KILLS_TO_WIN_GAME;
@@ -160,8 +159,11 @@ public class PVP extends JavaPlugin implements Listener{
 	 */
 	private Map<Location, Integer> clickableBlocks;
 	private Map<Location, Integer> respawningBlocks;
-	private static final int BLOCK_RESPAWN_TIME = 600;  // 30 Seconds
-	private static final int MAX_BLOCK_CLICKS = 9;
+	private static int BONUS_BLOCK_RESPAWN_TIME;
+	private static int MAX_BONUS_BLOCK_CLICKS;
+	private static int NUM_EMERALDS_FOR_POINT;
+	private static Material BONUS_MATERIAL;
+	private static List<Item> effectItems;
 	
 	/**
 	 *  Team Variables
@@ -204,7 +206,8 @@ public class PVP extends JavaPlugin implements Listener{
 		GameState = GameStates.Lobby;
 		playerTeam = new HashMap<String, String>();
 		clickableBlocks = new HashMap<Location, Integer>();
-		respawningBlocks = new HashMap<Location, Integer>();
+		respawningBlocks = new ConcurrentHashMap<Location, Integer>();
+		effectItems = new CopyOnWriteArrayList<Item>();
 
 		getServer().getPluginManager().registerEvents(this, this);
 		logger = this.getLogger();
@@ -238,6 +241,10 @@ public class PVP extends JavaPlugin implements Listener{
 		SECONDS_TO_END_GAME = this.getConfig().getInt("SecondsToEndGame");
 		enlightenChance = this.getConfig().getInt("EnlightenChance");
 		numTeams = this.getConfig().getInt("NumTeams");
+		BONUS_BLOCK_RESPAWN_TIME = this.getConfig().getInt("BonusBlockRespawnTime");
+		MAX_BONUS_BLOCK_CLICKS = this.getConfig().getInt("MaxBonusBlockClicks");
+		NUM_EMERALDS_FOR_POINT = this.getConfig().getInt("NumEmeralsForPoint");
+		BONUS_MATERIAL = Material.getMaterial(this.getConfig().getString("BonusEmeraldMaterial"));
 		
 		
 		/**
@@ -513,7 +520,7 @@ public class PVP extends JavaPlugin implements Listener{
 		{
 			Location clickedBlockLoc = clickedBlock.getLocation();
 			
-			if( clickedBlock.getType() == Material.EMERALD_BLOCK )
+			if( clickedBlock.getType() == BONUS_MATERIAL )
 			{
 				/**
 				 *  Check if this block is in the list according to its Location.
@@ -536,7 +543,7 @@ public class PVP extends JavaPlugin implements Listener{
 					 *   - Add the Location to the HashMap and set the Counter
 					 *   - Counter set to random 0-9
 					 */
-					int allowedClicks = randInt(0, MAX_BLOCK_CLICKS);
+					int allowedClicks = randInt(0, MAX_BONUS_BLOCK_CLICKS);
 					//Bukkit.broadcastMessage("Block Added to HashMap: " + allowedClicks + " allowed Clicks");
 					clickableBlocks.put(clickedBlockLoc, allowedClicks);
 				}	
@@ -548,7 +555,44 @@ public class PVP extends JavaPlugin implements Listener{
 				clickingPlayer.getInventory().addItem(itemStack);
 				clickingPlayer.playSound(clickingPlayer.getLocation(), Sound.SUCCESSFUL_HIT, 1, 1);
 				
-				if( clickableBlocks.get(clickedBlockLoc) <= 0 ) // Count = 0
+				/**
+				 *  Emerald Effect
+				 */
+				Location itemLocation = clickedBlock.getLocation().add(0, 1, 0);
+				Item item = itemLocation.getWorld().dropItemNaturally(itemLocation, itemStack);
+				item.setPickupDelay(100);
+				Vector itemVelocity = item.getVelocity();
+				itemVelocity.add(new Vector(0, 1, 0));
+				item.setVelocity(itemVelocity);
+				effectItems.add(item);
+				
+				/**
+				 *  Check if player has ## Emeralds
+				 */
+				ItemStack emeralds = new ItemStack(Material.EMERALD, NUM_EMERALDS_FOR_POINT);
+				if( clickingPlayer.getInventory().contains(emeralds) )
+				{
+					clickingPlayer.getInventory().removeItem(emeralds);
+					
+					if (GameState == GameStates.Running)
+					{
+						/**
+						 *  Add a point to player's score, if game is currently running.
+						 */
+						updateScore(clickingPlayer, 1);
+						
+						clickingPlayer.sendMessage("Collected " + NUM_EMERALDS_FOR_POINT + " Emeralds!  Score increased!");
+					}
+					else
+					{
+						clickingPlayer.sendMessage(NUM_EMERALDS_FOR_POINT + " Emeralds are worth 1 Point in game.");
+					}
+				}
+				
+				/**
+				 *  Block Click Count
+				 */
+				if( clickableBlocks.get(clickedBlockLoc) <= 0 )
 				{
 					/**
 					 *  If the counter reaches Zero, set the block to AIR.
@@ -558,7 +602,7 @@ public class PVP extends JavaPlugin implements Listener{
 					/**
 					 *  Set another HashMap<Location, Integer> counter to count to respawn the block -> timeTicked().
 					 */
-					respawningBlocks.put(clickedBlockLoc, BLOCK_RESPAWN_TIME);
+					respawningBlocks.put(clickedBlockLoc, BONUS_BLOCK_RESPAWN_TIME);
 					clickableBlocks.remove(clickedBlockLoc);
 				}
 			}
@@ -642,29 +686,6 @@ public class PVP extends JavaPlugin implements Listener{
 				
 				SpawnPlayerInGame(e.getPlayer(), "no");
 			}
-		}
-		
-		Player[] players = Bukkit.getOnlinePlayers();
-		
-		if( players.length >= 2 )
-		{
-			minimumPlayerCount = true;
-			autoGameOver = 600;
-		}
-	}
-
-	@EventHandler
-	public void onPlayerQuit ( PlayerQuitEvent e){
-		Player[] players = Bukkit.getOnlinePlayers();
-		
-		if( players.length <= 1 )
-		{
-			Bukkit.broadcastMessage("Below Minimum Player Count (2).  Game Over in 30 seconds, or type /pvpDefault to continue playing.");
-			
-			if( minimumPlayerCount )
-				autoGameOver = 600;  //  30 seconds
-			
-			minimumPlayerCount = false;
 		}
 	}
 	
@@ -885,19 +906,6 @@ public class PVP extends JavaPlugin implements Listener{
 					Bukkit.broadcastMessage("Error:  No Game Mode");
 				return false;
 			}
-			
-			return true;  // Return true when a command is executed successfully.
-		}
-		
-		/**
-		 *  Toggle PVP Game Defaults
-		 */
-		if(cmd.getName().equalsIgnoreCase("pvpdefault"))
-		{	
-			if( pvpDefault )
-				pvpDefault = false;
-			else
-				pvpDefault = true;
 			
 			return true;  // Return true when a command is executed successfully.
 		}
@@ -1797,22 +1805,11 @@ public class PVP extends JavaPlugin implements Listener{
 			gameStats.processKillStreakTimer();
 			
 			/**
-			 *  Minimum Player Count Timer
-			 */
-			if( pvpDefault && !minimumPlayerCount )
-			{
-				autoGameOver -= 10;
-				
-				if( autoGameOver <= 0 )
-					GameState = GameStates.GameOver;
-			}
-			
-			/**
 			 *  Check Clickable Blocks List
 			 *   - If it's on the list, but the block at this location is not Emerald, then 
 			 *        somehow the block was broken before the counter reached Zero.
 			 */
-			if( gameSecondsCount % 30 == 0 )
+			if( ((int) (gameSecondsCount % 30)) == 0 )
 			{
 				if( !clickableBlocks.isEmpty() )
 				{
@@ -1931,6 +1928,26 @@ public class PVP extends JavaPlugin implements Listener{
 				}
 			}
 		}
+		
+		/**
+		 *  Emerald Effect Timer
+		 */
+		if( effectItems.size() > 0 )
+		{
+			Iterator<Item> it = effectItems.iterator();
+			
+			/**
+			 *  Loop through List, checking Time Lived.
+			 */
+			while (it.hasNext()) {
+				Item entryItem = it.next();
+
+				if( entryItem.getTicksLived() >= 30 )
+				{
+					entryItem.remove();
+				}
+			}
+		}
 	}
 
 	public void StartGame(){
@@ -2010,16 +2027,6 @@ public class PVP extends JavaPlugin implements Listener{
 		for( Weapon w : weapons )
 		{
 			w.processWeapon();
-		}
-		
-		if( players.length <= 1 )
-		{
-			Bukkit.broadcastMessage("Below Minimum Player Count (2).  Game Over in 30 seconds, or type /pvpDefault to continue playing.");
-			
-			if( minimumPlayerCount )
-				autoGameOver = 600;  //  30 seconds
-				
-			minimumPlayerCount = false;
 		}
 	}
 }

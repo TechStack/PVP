@@ -8,6 +8,10 @@ GameMode: freeforall
 KillsToWinGame: 25
 SecondsToEndGame: 600
 EnlightenChance: 10
+BonusBlockRespawnTime: 600
+MaxBonusBlockClicks: 9
+NumEmeralsForPoint: 32
+BonusEmeraldMaterial: EMERALD_BLOCK
 LobbySawn:
   X: 150
   Y: 113
