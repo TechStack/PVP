@@ -26,12 +26,17 @@ public class BlockRespawner {
 	
 	public int processTimer()
 	{
-		respawnTime--;
+		respawnTime -= 10;
 		return respawnTime;
 	}
 	
 	public void spawnBlock()
 	{
 		respawnLocation.getBlock().setType(blockMaterial);
+	}
+	
+	public Location getLocation()
+	{
+		return respawnLocation;
 	}
 }

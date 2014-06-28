@@ -308,9 +308,9 @@ public class PVP extends JavaPlugin implements Listener{
 			/**
 			 *  Get Location
 			 */
-			pointX = centerBlockValue(this.getConfig().getDouble("Weapon" + i + ".X"));
+			pointX = this.getConfig().getDouble("Weapon" + i + ".X");
 			pointY = this.getConfig().getDouble("Weapon" + i + ".Y");
-			pointZ = centerBlockValue(this.getConfig().getDouble("Weapon" + i + ".Z"));
+			pointZ = this.getConfig().getDouble("Weapon" + i + ".Z");
 			weaponLocation = new Location(Bukkit.getWorld("World"), pointX, pointY, pointZ);
 			
 			int amount = 1;
@@ -601,12 +601,14 @@ public class PVP extends JavaPlugin implements Listener{
 						/**
 						 *  Check if this block matches a Weapon Location
 						 */
-						if( clickedBlockLoc == w.getWeaponLocation() )
+						if( clickedBlockLoc.getBlockX() == w.getWeaponLocation().getBlockX() && clickedBlockLoc.getBlockY() == w.getWeaponLocation().getBlockY() && clickedBlockLoc.getBlockZ() == w.getWeaponLocation().getBlockZ() )
 						{
 							/**
 							 *  Give the Player the Weapon
 							 *   - Search inventory and upgrade Sword, Bow, etc if possible
 							 */
+							Bukkit.broadcastMessage("Weapon Block Location - Matched.");
+							
 							if( w.getWeaponItemStack().getType() == Material.BOW )
 							{
 								w.upgradeWeapon(clickingPlayer, Material.BOW);
@@ -1911,6 +1913,7 @@ public class PVP extends JavaPlugin implements Listener{
 				if (respawnTime <= 0) {
 					Block tempBlock = location.getBlock();  //location.getWorld().getBlockAt(location);
 					tempBlock.setType(Material.EMERALD_BLOCK);
+					getServer().getWorld("world").playSound(location, Sound.VILLAGER_YES, 1, 1);
 					respawningBlocks.remove(location);
 				} else {
 					respawningBlocks.put(location, respawnTime);
@@ -1992,6 +1995,7 @@ public class PVP extends JavaPlugin implements Listener{
 					 *  Spawn Block and remove entry from Main List
 					 */
 					entryBlockRespawner.spawnBlock();
+					getServer().getWorld("world").playSound(entryBlockRespawner.getLocation(), Sound.ENDERMAN_TELEPORT, 1, 1);
 					
 					respawningWeapons.remove(entryBlockRespawner);
 				}
@@ -2039,6 +2043,11 @@ public class PVP extends JavaPlugin implements Listener{
 		
 		for (Player p : players)
 		{
+			if( leadingPlayer == null )
+			{
+				leadingPlayer = p;
+			}
+			
 			/**
 			 *  Avoid death by falling.
 			 */
